@@ -11,7 +11,10 @@
   place-items: center;
   min-height: 100vh;
   overflow: hidden;
-  background: #050505;
+  background:
+    radial-gradient(ellipse 80% 60% at 18% 12%, rgba(255, 255, 255, 0.14), transparent 55%),
+    radial-gradient(ellipse 70% 55% at 88% 85%, rgba(143, 0, 41, 0.65), transparent 52%),
+    linear-gradient(155deg, #8f0029 0%, #c70039 46%, #1c1412 125%);
   animation: brandIn var(--motion-base) var(--ease-out) both;
 }
 
