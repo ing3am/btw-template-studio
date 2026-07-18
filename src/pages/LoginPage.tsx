@@ -5,6 +5,7 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { DEMO_CREDENTIALS } from '@/features/auth/api'
 import { Button } from '@/shared/ui/Button'
 import { useToast } from '@/shared/ui/Toast'
+import loginArt from '@/assets/btw-login.png'
 import styles from './LoginPage.module.css'
 
 type LocationState = {
@@ -60,17 +61,12 @@ export function LoginPage() {
 
   return (
     <div className={styles.page}>
-      <section className={styles.brand} aria-label="Marca">
-        <div className={styles.brandGlow} aria-hidden="true" />
-        <div className={styles.brandInner}>
-          <p className={styles.eyebrow}>BTW</p>
-          <h1 className={styles.brandTitle}>Template Studio</h1>
-          <p className={styles.brandLead}>
-            Diseña representaciones gráficas de facturación electrónica con
-            control y claridad.
-          </p>
-        </div>
-        <p className={styles.brandFoot}>Plantillas PDF · Colombia</p>
+      <section className={styles.brand} aria-label="BTW Template Studio">
+        <img
+          className={styles.brandArt}
+          src={loginArt}
+          alt="BTW Template Studio — diseña representaciones gráficas de facturación electrónica"
+        />
       </section>
 
       <section className={styles.panel}>

@@ -1,75 +1,24 @@
 .page {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   min-height: 100vh;
   background: var(--color-bg);
 }
 
 .brand {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: clamp(2rem, 5vw, 3.5rem);
-  color: #fffcf7;
+  min-height: 100vh;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 15%, rgba(255, 255, 255, 0.16), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 85% 80%, rgba(143, 0, 41, 0.55), transparent 50%),
-    linear-gradient(155deg, #8f0029 0%, #c70039 48%, #1c1412 120%);
+  background: #0a0a0a;
   animation: brandIn var(--motion-base) var(--ease-out) both;
 }
 
-.brandGlow {
-  position: absolute;
-  inset: auto -20% -30% auto;
-  width: min(52vw, 28rem);
-  height: min(52vw, 28rem);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.12), transparent 68%);
-  pointer-events: none;
-}
-
-.brandInner {
-  position: relative;
-  max-width: 28rem;
-}
-
-.eyebrow {
-  margin: 0 0 0.75rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  opacity: 0.85;
-}
-
-.brandTitle {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(2.4rem, 5vw, 3.6rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
-}
-
-.brandLead {
-  margin: 1.1rem 0 0;
-  max-width: 24rem;
-  font-size: 1.02rem;
-  line-height: 1.55;
-  opacity: 0.88;
-}
-
-.brandFoot {
-  position: absolute;
-  left: clamp(2rem, 5vw, 3.5rem);
-  bottom: clamp(1.25rem, 3vw, 2rem);
-  margin: 0;
-  font-size: 0.75rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  opacity: 0.55;
+.brandArt {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
 }
 
 .panel {
@@ -228,11 +177,9 @@
 @keyframes brandIn {
   from {
     opacity: 0;
-    transform: translateX(-12px);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 
@@ -259,26 +206,8 @@
   }
 
   .brand {
-    min-height: 38vh;
-    padding: 1.5rem 1.25rem 2.75rem;
-    justify-content: center;
-  }
-
-  .brandInner {
-    padding-bottom: 0;
-  }
-
-  .brandFoot {
-    left: 1.25rem;
-    bottom: 1rem;
-  }
-
-  .brandTitle {
-    font-size: clamp(2rem, 8vw, 2.6rem);
-  }
-
-  .brandLead {
-    font-size: 0.95rem;
+    min-height: 42vh;
+    max-height: 46vh;
   }
 
   .panel {
