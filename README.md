@@ -26,9 +26,30 @@ Con `VITE_USE_MOCKS=true` (default) las plantillas viven en `localStorage`.
 | `npm run build` | Build de producción |
 | `npm run preview` | Preview del build |
 
-## Documentación de producto
+## Deploy (producción)
 
-- `PLAN.md`
-- `REQUERIMIENTO-BUILDER.md`
-- `REQUERIMIENTO-TIPOGRAFIA.md`
-- `REQUERIMIENTO-PAGINA.md`
+Cada push a `main` (o “Run workflow” manual) construye y publica en:
+
+- Host: `premiundev.com`
+- Ruta: `/var/www/premiundev` (Nginx root)
+
+### Secretos de GitHub (ya deben existir)
+
+| Secret | Uso |
+|---|---|
+| `DEPLOY_HOST` | `premiundev.com` |
+| `DEPLOY_USER` | usuario SSH |
+| `DEPLOY_PASSWORD` | contraseña SSH |
+| `DEPLOY_PATH` | `/var/www/premiundev` |
+| `DEPLOY_PORT` | `22` (opcional) |
+
+### Deploy local (opcional)
+
+```bash
+brew install hudochenkov/sshpass/sshpass
+cp .env.deploy.example .env.deploy
+# edita DEPLOY_PASSWORD en .env.deploy
+npm run deploy
+```
+
+`.env.deploy` no se sube a git.
