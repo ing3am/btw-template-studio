@@ -37,7 +37,7 @@ export function defaultPageSettings(): PageSettings {
     widthMm: 216,
     heightMm: 279,
     orientation: 'vertical',
-    margins: { top: 15, right: 15, bottom: 15, left: 15 },
+    margins: { top: 5, right: 5, bottom: 5, left: 5 },
     background: '#ffffff',
   }
 }

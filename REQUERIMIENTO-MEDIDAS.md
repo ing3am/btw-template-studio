@@ -49,13 +49,17 @@ Jerarquía suave sin romper densidad:
 - Tipo de documento → **12px**
 - Total → **11px**
 
+### 3.2 Márgenes de página (mm)
+Default del documento: **5 mm** en los cuatro lados (`top` / `right` / `bottom` / `left`).  
+El cliente puede cambiarlos en el panel Documento; el default solo aplica a plantillas nuevas / seed regenerado.
+
 ---
 
 ## 4. Reglas
 
-1. Código fuente única: `textStyle.ts` (`FONT_SIZE_PRESETS` + `default*Style`).
+1. Código fuente única tipografía: `textStyle.ts` (`FONT_SIZE_PRESETS` + `default*Style`).
 2. El HTML/PDF no depende del nombre del preset; solo de `font-size: Npx`.
-3. Página y márgenes siguen en **mm** (`REQUERIMIENTO-PAGINA.md`); no se mezclan en este contrato.
+3. Márgenes default: `defaultPageSettings()` en `pageSettings.ts` → **5 mm** (editables en UI).
 
 ---
 
@@ -65,4 +69,5 @@ Jerarquía suave sin romper densidad:
 - [x] Defaults de TextStyle en 9  
 - [x] Seed con tipo 12 y total 11  
 - [x] CSS base del documento en 9px  
+- [x] Márgenes default 5 mm (4 lados), editables por el cliente  
 - [x] Storage mock regenera seed con nuevos defaults  
