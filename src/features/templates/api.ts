@@ -10,6 +10,9 @@ import type {
 /** Bumped after merge: DIAN labels (main) + Seis Amazonas builder (local). */
 const STORAGE_KEY = 'btw-template-studio.templates.v21'
 
+const useMocks = import.meta.env.VITE_USE_MOCKS !== 'false'
+const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+
 function readStore(): TemplateBundle[] {
   const raw = localStorage.getItem(STORAGE_KEY)
   if (!raw) {
@@ -38,14 +41,81 @@ function latestVersion(bundle: TemplateBundle): TemplateVersion {
   return [...bundle.versions].sort((a, b) => b.versionNumber - a.versionNumber)[0]
 }
 
-export async function listTemplates(): Promise<Template[]> {
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  if (!apiBase) {
+    throw new Error('VITE_API_URL no está configurada.')
+  }
+
+  const response = await fetch(`${apiBase}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+  })
+
+  if (!response.ok) {
+    let message = `Error HTTP ${response.status}`
+    try {
+      const body = (await response.json()) as { message?: string }
+      if (body.message) message = body.message
+    } catch {
+      /* ignore */
+    }
+    throw new Error(message)
+  }
+
+  if (response.status === 204) {
+    return undefined as T
+  }
+
+  return (await response.json()) as T
+}
+
+function normalizeTemplate(raw: Template & { updatedAt: string | Date }): Template {
+  return {
+    id: String(raw.id),
+    name: raw.name,
+    documentType: raw.documentType,
+    status: raw.status,
+    currentVersionNumber: raw.currentVersionNumber,
+    updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : new Date(raw.updatedAt).toISOString(),
+  }
+}
+
+function normalizeVersion(raw: TemplateVersion & { createdAt: string | Date }): TemplateVersion {
+  return {
+    id: String(raw.id),
+    templateId: String(raw.templateId),
+    versionNumber: raw.versionNumber,
+    html: raw.html ?? '',
+    css: raw.css ?? '',
+    schemaJson: raw.schemaJson ?? '{}',
+    sampleDataJson: raw.sampleDataJson ?? '{}',
+    blocksJson: raw.blocksJson ?? '[]',
+    createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : new Date(raw.createdAt).toISOString(),
+    isPublished: Boolean(raw.isPublished),
+  }
+}
+
+function normalizeBundle(raw: {
+  template: Template & { updatedAt: string | Date }
+  versions: Array<TemplateVersion & { createdAt: string | Date }>
+}): TemplateBundle {
+  return {
+    template: normalizeTemplate(raw.template),
+    versions: (raw.versions ?? []).map(normalizeVersion),
+  }
+}
+
+async function listTemplatesMock(): Promise<Template[]> {
   await delay()
   return readStore()
     .map((bundle) => bundle.template)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
 }
 
-export async function getTemplateBundle(id: string): Promise<TemplateBundle> {
+async function getTemplateBundleMock(id: string): Promise<TemplateBundle> {
   await delay()
   const bundle = readStore().find((item) => item.template.id === id)
   if (!bundle) {
@@ -54,7 +124,7 @@ export async function getTemplateBundle(id: string): Promise<TemplateBundle> {
   return bundle
 }
 
-export async function createTemplate(input: CreateTemplateInput): Promise<Template> {
+async function createTemplateMock(input: CreateTemplateInput): Promise<Template> {
   await delay()
   const bundles = readStore()
   const bundle = createBlankBundle(input.name, input.documentType)
@@ -62,7 +132,7 @@ export async function createTemplate(input: CreateTemplateInput): Promise<Templa
   return bundle.template
 }
 
-export async function saveDraft(id: string, input: SaveDraftInput): Promise<TemplateVersion> {
+async function saveDraftMock(id: string, input: SaveDraftInput): Promise<TemplateVersion> {
   await delay()
   const bundles = readStore()
   const index = bundles.findIndex((item) => item.template.id === id)
@@ -96,7 +166,7 @@ export async function saveDraft(id: string, input: SaveDraftInput): Promise<Temp
   return updatedVersion
 }
 
-export async function publishTemplate(id: string): Promise<TemplateVersion> {
+async function publishTemplateMock(id: string): Promise<TemplateVersion> {
   await delay()
   const bundles = readStore()
   const index = bundles.findIndex((item) => item.template.id === id)
@@ -133,6 +203,83 @@ export async function publishTemplate(id: string): Promise<TemplateVersion> {
   return publishedVersion
 }
 
+async function listTemplatesApi(): Promise<Template[]> {
+  const items = await apiFetch<Array<Template & { updatedAt: string }>>('/api/v1/templates')
+  return items.map(normalizeTemplate).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+}
+
+async function getTemplateBundleApi(id: string): Promise<TemplateBundle> {
+  const bundle = await apiFetch<{
+    template: Template & { updatedAt: string }
+    versions: Array<TemplateVersion & { createdAt: string }>
+  }>(`/api/v1/templates/${id}`)
+  return normalizeBundle(bundle)
+}
+
+async function createTemplateApi(input: CreateTemplateInput): Promise<Template> {
+  const blank = createBlankBundle(input.name, input.documentType)
+  const version = blank.versions[0]
+  const created = await apiFetch<Template & { updatedAt: string }>('/api/v1/templates', {
+    method: 'POST',
+    body: JSON.stringify({
+      name: input.name,
+      documentType: input.documentType,
+      nit: '900000000',
+      sectorSalud: false,
+      html: version.html,
+      css: version.css,
+      schemaJson: version.schemaJson,
+      sampleDataJson: version.sampleDataJson,
+      blocksJson: version.blocksJson,
+      pageJson: '{}',
+    }),
+  })
+  return normalizeTemplate(created)
+}
+
+async function saveDraftApi(id: string, input: SaveDraftInput): Promise<TemplateVersion> {
+  const version = await apiFetch<TemplateVersion & { createdAt: string }>(
+    `/api/v1/templates/${id}/draft`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    },
+  )
+  return normalizeVersion(version)
+}
+
+async function publishTemplateApi(id: string): Promise<TemplateVersion> {
+  const version = await apiFetch<TemplateVersion & { createdAt: string }>(
+    `/api/v1/templates/${id}/publish`,
+    { method: 'POST' },
+  )
+  return normalizeVersion(version)
+}
+
+export async function listTemplates(): Promise<Template[]> {
+  return useMocks ? listTemplatesMock() : listTemplatesApi()
+}
+
+export async function getTemplateBundle(id: string): Promise<TemplateBundle> {
+  return useMocks ? getTemplateBundleMock(id) : getTemplateBundleApi(id)
+}
+
+export async function createTemplate(input: CreateTemplateInput): Promise<Template> {
+  return useMocks ? createTemplateMock(input) : createTemplateApi(input)
+}
+
+export async function saveDraft(id: string, input: SaveDraftInput): Promise<TemplateVersion> {
+  return useMocks ? saveDraftMock(id, input) : saveDraftApi(id, input)
+}
+
+export async function publishTemplate(id: string): Promise<TemplateVersion> {
+  return useMocks ? publishTemplateMock(id) : publishTemplateApi(id)
+}
+
 export function getLatestVersion(bundle: TemplateBundle): TemplateVersion {
   return latestVersion(bundle)
+}
+
+export function isUsingMocks(): boolean {
+  return useMocks
 }
