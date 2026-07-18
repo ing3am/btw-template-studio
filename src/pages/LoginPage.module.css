@@ -1,4 +1,8 @@
 .page {
+  --login-orange: #f26b1a;
+  --login-orange-hover: #d9570f;
+  --login-orange-deep: #e85c0c;
+  --login-orange-soft: rgba(242, 107, 26, 0.18);
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(22rem, 0.75fr);
   min-height: 100vh;
@@ -114,10 +118,10 @@
   width: 2.45rem;
   height: 2.45rem;
   border-radius: 999px;
-  background: rgba(232, 92, 12, 0.9);
+  background: var(--login-orange-deep);
   color: #fffcf7;
   flex-shrink: 0;
-  box-shadow: 0 0 0 4px rgba(232, 92, 12, 0.2);
+  box-shadow: 0 0 0 4px var(--login-orange-soft);
 }
 
 .feature strong {
@@ -167,7 +171,7 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-accent);
+  color: var(--login-orange-deep);
 }
 
 .panelTitle {
@@ -236,8 +240,8 @@
 
 .inputWrap input:focus {
   outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-soft);
+  border-color: var(--login-orange);
+  box-shadow: 0 0 0 3px var(--login-orange-soft);
 }
 
 .reveal {
@@ -275,6 +279,24 @@
   margin-top: 0.35rem;
   min-height: 2.75rem;
   border-radius: var(--radius) !important;
+  background: linear-gradient(180deg, #ff7a2e 0%, var(--login-orange) 48%, var(--login-orange-deep) 100%) !important;
+  border-color: transparent !important;
+  color: #fff8f3 !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.22) inset,
+    0 10px 24px rgba(232, 92, 12, 0.28) !important;
+}
+
+.submit:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ff853d 0%, var(--login-orange-hover) 55%, #c44d0a 100%) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 12px 28px rgba(217, 87, 15, 0.34) !important;
+}
+
+.submit:focus-visible {
+  outline: 2px solid var(--login-orange);
+  outline-offset: 2px;
 }
 
 .demo {
