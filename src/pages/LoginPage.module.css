@@ -12,9 +12,10 @@
   min-height: 100vh;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 80% 60% at 18% 12%, rgba(255, 255, 255, 0.05), transparent 55%),
-    radial-gradient(ellipse 70% 55% at 88% 85%, rgba(45, 0, 14, 0.85), transparent 52%),
-    linear-gradient(155deg, #3a0012 0%, #5c001d 38%, #8f0029 72%, #0a0406 130%);
+    radial-gradient(ellipse 55% 45% at 78% 42%, rgba(255, 64, 96, 0.28), transparent 58%),
+    radial-gradient(ellipse 85% 70% at 72% 50%, rgba(199, 0, 57, 0.55), transparent 62%),
+    radial-gradient(ellipse 120% 100% at 50% 50%, transparent 35%, rgba(5, 2, 4, 0.92) 100%),
+    linear-gradient(125deg, #070305 0%, #1c050c 32%, #5c001d 58%, #8f0029 78%, #0a0305 100%);
   animation: brandIn var(--motion-base) var(--ease-out) both;
 }
 
