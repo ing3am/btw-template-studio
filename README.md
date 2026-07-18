@@ -53,3 +53,20 @@ npm run deploy
 ```
 
 `.env.deploy` no se sube a git.
+
+## Git standards (team)
+
+Branches, commits, and PR titles use **Conventional Commits** in **English**.
+
+See `.cursor/rules/git-standards.mdc`.
+
+Examples:
+- Branch: `feature/mandatory-labels`
+- Commit: `feat(builder): add mandatory label validation`
+
+## Documentación de producto
+
+- `PLAN.md`
+- `REQUERIMIENTO-BUILDER.md`
+- `REQUERIMIENTO-TIPOGRAFIA.md`
+- `REQUERIMIENTO-PAGINA.md`
