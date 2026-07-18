@@ -256,7 +256,7 @@ export function buildMarginGuidesCss(page: PageSettings): string {
   right: ${margins.right}mm;
   bottom: ${margins.bottom}mm;
   left: ${margins.left}mm;
-  border: 1px dashed rgba(249, 76, 16, 0.22);
+  border: 1px dashed rgba(199, 0, 57, 0.22);
   background: transparent;
   box-sizing: border-box;
 }

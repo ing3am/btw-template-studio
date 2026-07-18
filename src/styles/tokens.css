@@ -10,11 +10,11 @@
   --color-muted: #7a6b62;
   --color-line: #e0d6c8;
 
-  /* Marca */
-  --color-accent: #f94c10;
-  --color-accent-hover: #d93f0a;
-  --color-accent-soft: #ffe4d8;
-  --color-brand-deep: #c70039;
+  /* Marca — vino corporativo */
+  --color-accent: #c70039;
+  --color-accent-hover: #a5002f;
+  --color-accent-soft: #fde8ee;
+  --color-brand-deep: #8f0029;
 
   --color-warning: #b45309;
   --color-warning-soft: #fff1db;
