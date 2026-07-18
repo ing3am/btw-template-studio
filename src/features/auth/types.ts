@@ -2,7 +2,7 @@ export type AuthUser = {
   id: string
   username: string
   displayName: string
-  role: 'funcional'
+  role: string
 }
 
 export type LoginInput = {
