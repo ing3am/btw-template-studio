@@ -11,6 +11,7 @@ type PreviewHtmlProps = {
   css: string
   sampleDataJson: string
   templateName?: string
+  assets?: Record<string, string>
 }
 
 const ZOOM_MIN = 0.5
@@ -28,6 +29,7 @@ export function PreviewHtml({
   css,
   sampleDataJson,
   templateName,
+  assets,
 }: PreviewHtmlProps) {
   const [zoom, setZoom] = useState(ZOOM_DEFAULT)
 
@@ -36,8 +38,9 @@ export function PreviewHtml({
     const guides = buildMarginGuidesCss(page)
     return renderPreviewHtml(html, css, sampleDataJson, {
       extraCss: guides,
+      assets,
     })
-  }, [html, css, sampleDataJson])
+  }, [html, css, sampleDataJson, assets])
 
   const zoomPercent = Math.round(zoom * 100)
 
@@ -87,6 +90,7 @@ export function PreviewHtml({
                 css,
                 sampleDataJson,
                 name: templateName,
+                assets,
               })
             }
           >

@@ -41,9 +41,10 @@ export function collectPresentTagIds(blocks: TemplateBlock[]): Set<string> {
         if (byPath) present.add(byPath.id)
       }
     }
-    if (block.type === 'imagen') {
+    if (block.type === 'imagen' || block.type === 'qr') {
       const tagId = String(block.props.tagId || '')
       if (tagId) present.add(tagId)
+      if (block.type === 'qr') present.add('qr')
       const srcPath = String(block.props.srcPath || '')
       const byPath = requiredDianLabels().find(
         (label) => label.kind === 'image' && label.path === srcPath,

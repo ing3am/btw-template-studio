@@ -15,11 +15,13 @@ export function downloadTemplateHtml(options: {
   css: string
   sampleDataJson: string
   name?: string
+  assets?: Record<string, string>
 }): void {
   const content = renderPreviewHtml(
     options.html,
     options.css,
     options.sampleDataJson,
+    { assets: options.assets },
   )
   const slug = options.name ? slugify(options.name) : 'plantilla'
   const filename = `${slug || 'plantilla'}.html`

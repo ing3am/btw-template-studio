@@ -19,6 +19,7 @@ export type BlockType =
   | 'texto'
   | 'espacio'
   | 'imagen'
+  | 'qr'
   | 'salto'
 
 export type DatosFieldMode = 'texto' | 'campo'
@@ -520,14 +521,33 @@ export const BLOCK_CATALOG: {
   {
     type: 'imagen',
     label: 'Imagen',
-    description: 'Imagen o código QR desde el JSON',
+    description: 'Logo u otra imagen subida o desde un campo JSON',
     defaults: {
-      srcPath: 'documento.qrUrl',
+      sourceMode: 'upload',
+      assetId: '',
+      srcPath: '',
       width: 120,
       height: 120,
-      align: 'izquierda',
-      tagId: '',
-      asQr: false,
+      align: 'centro',
+      cellAlign: 'centro',
+      cellVAlign: 'centro',
+      columna: 1,
+    },
+  },
+  {
+    type: 'qr',
+    label: 'Código QR',
+    description: 'QR DIAN desde la URL del UBL u otro campo',
+    defaults: {
+      sourceMode: 'dian',
+      srcPath: 'documento.qrUrl',
+      staticUrl: '',
+      tagId: 'qr',
+      width: 80,
+      height: 80,
+      align: 'centro',
+      cellAlign: 'centro',
+      cellVAlign: 'centro',
       columna: 1,
     },
   },
@@ -560,12 +580,16 @@ export function createDefaultFacturaBlocks(): TemplateBlock[] {
   }
 
   // —— Header {20, 30, 20}: logo | empresa | tipo+LegalNumber ——
-  const logo = createBlock('texto')
+  const logo = createBlock('imagen')
   logo.props = {
-    content:
-      '@@html:<div class="logo-box">LOGO<br/><small>{{emisor.razonSocial}}</small></div>',
+    sourceMode: 'upload',
+    assetId: '',
+    srcPath: '',
+    width: 90,
+    height: 90,
+    align: 'centro',
     cellAlign: 'centro',
-    contentStyleJson: stringifyTextStyle(defaultBodyStyle()),
+    cellVAlign: 'centro',
   }
 
   const empresa = createBlock('datos')
@@ -720,11 +744,11 @@ export function createDefaultFacturaBlocks(): TemplateBlock[] {
     titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
   }
 
-  const qr = createBlock('imagen')
+  const qr = createBlock('qr')
   qr.props = {
+    sourceMode: 'dian',
     srcPath: 'documento.qrUrl',
     tagId: 'qr',
-    asQr: true,
     width: 80,
     height: 80,
     align: 'centro',

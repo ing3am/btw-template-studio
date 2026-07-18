@@ -1,3 +1,5 @@
+import { qrImageUrlFromPayload } from '@/features/templates/templateAssets'
+
 type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
 
 function getPath(data: Json, path: string): Json {
@@ -27,11 +29,8 @@ function formatValue(value: Json, filter?: string): string {
       return new Intl.DateTimeFormat('es-CO').format(date)
     }
   }
-  /** Payload URL (UBL/DIAN) → PNG del código QR para <img src>. */
   if (filter === 'qr') {
-    const payload = String(value).trim()
-    if (!payload) return ''
-    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=8&data=${encodeURIComponent(payload)}`
+    return qrImageUrlFromPayload(String(value))
   }
   if (typeof value === 'number') {
     return new Intl.NumberFormat('es-CO').format(value)
@@ -58,11 +57,29 @@ function renderEach(template: string, data: Json): string {
   )
 }
 
+function resolveAssetAndQrTokens(
+  html: string,
+  assets?: Record<string, string>,
+): string {
+  let body = html
+  body = body.replace(/\{\{asset:([a-zA-Z0-9_-]+)\}\}/g, (_m, id: string) => {
+    return assets?.[id] ?? ''
+  })
+  body = body.replace(/\{\{qrFixed:([^}]+)\}\}/g, (_m, encoded: string) => {
+    try {
+      return qrImageUrlFromPayload(decodeURIComponent(encoded))
+    } catch {
+      return ''
+    }
+  })
+  return body
+}
+
 export function renderPreviewHtml(
   html: string,
   css: string,
   sampleDataJson: string,
-  options?: { extraCss?: string },
+  options?: { extraCss?: string; assets?: Record<string, string> },
 ): string {
   let data: Json = {}
   try {
@@ -72,6 +89,7 @@ export function renderPreviewHtml(
   }
 
   let body = renderEach(html, data)
+  body = resolveAssetAndQrTokens(body, options?.assets)
   body = body.replace(
     /\{\{([\w.]+)(?:\|(\w+))?\}\}/g,
     (_match, path: string, filter?: string) =>

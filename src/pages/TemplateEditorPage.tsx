@@ -19,10 +19,15 @@ import {
 } from '@/features/templates/hooks'
 import { VisualBuilder } from '@/features/visual-builder/VisualBuilder'
 import { missingRequiredLabels } from '@/features/visual-builder/dianPresence'
+import { migrateTemplateBlocks } from '@/features/visual-builder/migrateBlocks'
 import {
   createDefaultFacturaBlocks,
   type TemplateBlock,
 } from '@/features/visual-builder/types'
+import {
+  listTemplateAssets,
+  type TemplateAsset,
+} from '@/features/templates/templateAssets'
 import { serializeBlocksToDocument } from '@/features/visual-builder/serializeToHtml'
 import {
   defaultPageSettings,
@@ -43,7 +48,7 @@ function parseBlocks(blocksJson: string | undefined): TemplateBlock[] {
   try {
     const parsed = JSON.parse(blocksJson) as TemplateBlock[]
     return Array.isArray(parsed) && parsed.length > 0
-      ? parsed
+      ? migrateTemplateBlocks(parsed)
       : createDefaultFacturaBlocks()
   } catch {
     return createDefaultFacturaBlocks()
@@ -67,6 +72,12 @@ export function TemplateEditorPage() {
   const [sampleDataJson, setSampleDataJson] = useState('')
   const [baseline, setBaseline] = useState('')
   const [statusText, setStatusText] = useState('Listo')
+  const [assets, setAssets] = useState<TemplateAsset[]>([])
+
+  useEffect(() => {
+    if (!id) return
+    setAssets(listTemplateAssets(id))
+  }, [id])
 
   useEffect(() => {
     if (!data) return
@@ -318,6 +329,9 @@ export function TemplateEditorPage() {
               blocks={blocks}
               sampleDataJson={sampleDataJson}
               page={page}
+              templateId={id}
+              assets={assets}
+              onAssetsChange={setAssets}
               onChange={applyBlocks}
               onPageChange={applyPage}
             />
@@ -381,6 +395,9 @@ export function TemplateEditorPage() {
             css={debouncedCss}
             sampleDataJson={debouncedSample}
             templateName={data.template.name}
+            assets={Object.fromEntries(
+              assets.map((asset) => [asset.id, asset.dataUrl]),
+            )}
           />
         </div>
       </div>

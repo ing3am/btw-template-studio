@@ -149,17 +149,43 @@ function renderLeaf(block: TemplateBlock): string {
     case 'imagen': {
       const width = Math.max(24, Number(p.width) || 120)
       const height = Math.max(24, Number(p.height) || 120)
-      const align = alignCss(String(p.align || 'izquierda'))
-      const src = String(p.srcPath || '').trim()
-      const asQr =
-        Boolean(p.asQr) || String(p.tagId || '') === 'qr'
-      const tokenSrc = src
-        ? asQr
-          ? `{{${src}|qr}}`
-          : `{{${src}}}`
-        : ''
-      return `<div class="image-block${asQr ? ' qr-wrap' : ''}" data-block="${block.id}" style="text-align:${align}">
-  <img src="${tokenSrc}" alt="${asQr ? 'Código QR' : ''}" width="${width}" height="${height}" style="max-width:100%;height:auto;width:${width}px" />
+      const align = alignCss(String(p.align || 'centro'))
+      const sourceMode = String(p.sourceMode || 'upload')
+      const assetId = String(p.assetId || '').trim()
+      const srcPath = String(p.srcPath || '').trim()
+      let tokenSrc = ''
+      if (sourceMode === 'campo' && srcPath) {
+        tokenSrc = `{{${srcPath}}}`
+      } else if (assetId) {
+        tokenSrc = `{{asset:${assetId}}}`
+      }
+      return `<div class="image-block" data-block="${block.id}" style="text-align:${align}">
+  ${
+    tokenSrc
+      ? `<img src="${tokenSrc}" alt="" width="${width}" height="${height}" style="max-width:100%;height:auto;width:${width}px" />`
+      : `<div class="image-placeholder" style="width:${width}px;height:${height}px;margin:0 auto;border:1px dashed #bbb;display:flex;align-items:center;justify-content:center;font-size:10px;color:#888">Sin imagen</div>`
+  }
+</div>`
+    }
+    case 'qr': {
+      const width = Math.max(24, Number(p.width) || 80)
+      const height = Math.max(24, Number(p.height) || 80)
+      const align = alignCss(String(p.align || 'centro'))
+      const sourceMode = String(p.sourceMode || 'dian')
+      const srcPath = String(p.srcPath || 'documento.qrUrl').trim()
+      const staticUrl = String(p.staticUrl || '').trim()
+      let tokenSrc = ''
+      if (sourceMode === 'url' && staticUrl) {
+        tokenSrc = `{{qrFixed:${encodeURIComponent(staticUrl)}}}`
+      } else if (srcPath) {
+        tokenSrc = `{{${srcPath}|qr}}`
+      }
+      return `<div class="image-block qr-wrap" data-block="${block.id}" style="text-align:${align}">
+  ${
+    tokenSrc
+      ? `<img src="${tokenSrc}" alt="Código QR" width="${width}" height="${height}" style="max-width:100%;height:auto;width:${width}px" />`
+      : `<div class="image-placeholder" style="width:${width}px;height:${height}px;margin:0 auto;border:1px dashed #bbb;display:flex;align-items:center;justify-content:center;font-size:10px;color:#888">Sin QR</div>`
+  }
 </div>`
     }
     case 'espacio':
