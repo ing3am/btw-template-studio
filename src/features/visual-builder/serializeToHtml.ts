@@ -131,7 +131,7 @@ function renderContainer(block: TemplateBlock): string {
     )
     .join('\n')
 
-  return `<section class="container" data-block="${block.id}" style="padding:${padding}px;background:${esc(background)};border:${border ? '1px solid #e0d6c8' : '0'};text-align:${align}">
+  return `<section class="container" data-block="${block.id}" style="padding:${padding}px;background:${esc(background)};border:${border ? '1px solid #e4e2de' : '0'};text-align:${align}">
   ${block.props.title ? styled('h2', titleStyle, esc(block.props.title), 'container-title') : ''}
   <div class="container-grid cols-${columns}">
   ${colsHtml}

@@ -7,7 +7,7 @@
   border: 1px dashed var(--color-line);
   border-radius: var(--radius-lg);
   background:
-    linear-gradient(180deg, rgba(255, 252, 247, 0.75), rgba(255, 251, 245, 0.96));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(247, 246, 244, 0.98));
   animation: fadeRise var(--motion-base) var(--ease-out) both;
 }
 

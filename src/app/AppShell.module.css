@@ -16,8 +16,8 @@
   gap: 1.25rem;
   min-height: 3.25rem;
   padding: 0 1.5rem;
-  border-bottom: 1px solid rgba(224, 214, 200, 0.85);
-  background: rgba(255, 252, 247, 0.92);
+  border-bottom: 1px solid rgba(228, 226, 222, 0.95);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(10px);
   z-index: 5;
 }

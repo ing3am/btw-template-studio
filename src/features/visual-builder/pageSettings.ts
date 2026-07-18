@@ -179,7 +179,7 @@ html, body {
   padding: ${margins.top}mm ${margins.right}mm ${margins.bottom}mm ${margins.left}mm;
   background: ${background};
   margin: 0 auto;
-  box-shadow: 0 0 0 1px #e0d6c8;
+  box-shadow: 0 0 0 1px #e4e2de;
 }`
 }
 
@@ -224,7 +224,7 @@ table {
 }
 
 th, td {
-  border-bottom: 1px solid #e0d6c8;
+  border-bottom: 1px solid #e4e2de;
   padding: 10px 8px;
 }
 
@@ -261,7 +261,7 @@ export function buildMarginGuidesCss(page: PageSettings): string {
   box-sizing: border-box;
 }
 body {
-  background: #ebe4d6 !important;
+  background: #efeeec !important;
   padding: 16px !important;
 }`
 }
