@@ -11,10 +11,11 @@ SNIPPET_PATH="${SNIPPET_PATH:-/etc/nginx/snippets/btw-api-auth.conf}"
 run_root() {
   if [[ "$(id -u)" -eq 0 ]]; then
     "$@"
-  elif command -v sudo >/dev/null 2>&1; then
+  elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
     sudo "$@"
   else
-    echo "Need root or sudo to configure nginx" >&2
+    echo "Need root or passwordless sudo to configure nginx" >&2
+    id
     exit 1
   fi
 }
