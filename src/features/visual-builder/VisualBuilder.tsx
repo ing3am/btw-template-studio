@@ -29,11 +29,11 @@ import {
   Image as ImageIcon,
   X,
   Tag,
+  BetweenHorizontalStart,
 } from 'lucide-react'
 import {
   BLOCK_CATALOG,
   createBlock,
-  createDatosField,
   datosPanelHeading,
   getBlockContentStyle,
   getBlockTitleStyle,
@@ -45,13 +45,32 @@ import {
   type BlockType,
   type TemplateBlock,
 } from './types'
+import { resolveBoxStyle } from './boxStyle'
+import {
+  normalizeCellAlign,
+  normalizeCellVAlign,
+  parseColumnWidths,
+  stringifyColumnWidths,
+  widthPercents,
+  widthsAfterInsert,
+  widthsAfterMove,
+  widthsAfterRemove,
+  type CellAlign,
+  type CellVAlign,
+} from './containerLayout'
 import { DatosFieldsEditor } from './DatosFieldsEditor'
 import { TableColumnsEditor } from './TableColumnsEditor'
 import { TextStyleEditor } from './TextStyleEditor'
 import { DocumentPagePanel } from './DocumentPagePanel'
 import type { PageSettings } from './pageSettings'
 import { filterDianLabels, type DianLabel } from './dianLabels'
-import { labelFromPaletteId, missingRequiredLabels } from './dianPresence'
+import {
+  labelFromPaletteId,
+  missingRequiredLabels,
+  createDatosBlockFromDianLabel,
+  createFieldFromDianLabel,
+  isEtiquetaDatosBlock,
+} from './dianPresence'
 import styles from './VisualBuilder.module.css'
 
 const ICONS: Record<BlockType, typeof Box> = {
@@ -61,6 +80,7 @@ const ICONS: Record<BlockType, typeof Box> = {
   texto: Type,
   espacio: Space,
   imagen: ImageIcon,
+  salto: BetweenHorizontalStart,
 }
 
 type VisualBuilderProps = {
@@ -170,7 +190,9 @@ function SortableRow({
           <Icon size={16} />
           <strong>
             {block.type === 'datos'
-              ? datosPanelHeading(block.props.panelName)
+              ? datosPanelHeading(block.props.panelName, {
+                  fromEtiqueta: isEtiquetaDatosBlock(block),
+                })
               : (catalog?.label ?? block.type)}
           </strong>
         </div>
@@ -193,10 +215,22 @@ function SortableRow({
 
 function summarize(block: TemplateBlock): string {
   switch (block.type) {
-    case 'contenedor':
-      return `${block.props.columns} cols · ${block.children?.length ?? 0} hijos`
-    case 'datos':
-      return `${block.props.title || 'Sin título'} · ${parseDatosFields(block.props.fieldsJson).length} campos`
+    case 'contenedor': {
+      const n = block.children?.length ?? 0
+      const widths = parseColumnWidths(block.props.columnWidths, n)
+      const pct = widthPercents(widths)
+      return n === 0
+        ? 'Fila vacía · suelta celdas'
+        : `${n} celdas · ${pct.map((p) => `${p}%`).join(' / ')}`
+    }
+    case 'datos': {
+      const panel = String(block.props.panelName || block.props.title || '')
+      const fields = parseDatosFields(block.props.fieldsJson)
+      if (isEtiquetaDatosBlock(block)) {
+        return `Etiqueta · ${panel || fields[0]?.label || 'DIAN'}`
+      }
+      return `${panel || 'Sin título'} · ${fields.length} campos`
+    }
     case 'tabla':
       return `${block.props.arrayPath} · ${parseTableColumns(block.props.columnsJson).length} columnas`
     case 'texto':
@@ -205,6 +239,10 @@ function summarize(block: TemplateBlock): string {
       return `${block.props.size}px`
     case 'imagen':
       return `${block.props.srcPath || 'Sin imagen'} · ${block.props.width}×${block.props.height}`
+    case 'salto':
+      return `Nueva página · ${
+        block.props.orientation === 'vertical' ? 'vertical' : 'horizontal'
+      }`
     default:
       return block.type
   }
@@ -230,6 +268,213 @@ function LabelPaletteItem({ label }: { label: DianLabel }) {
         <strong>{label.label}</strong>
       </span>
     </button>
+  )
+}
+
+function patchContainer(
+  container: TemplateBlock,
+  children: TemplateBlock[],
+  widths: number[],
+): TemplateBlock {
+  return {
+    ...container,
+    children,
+    props: {
+      ...container.props,
+      columnWidths: stringifyColumnWidths(widths),
+    },
+  }
+}
+
+function CellAlignField({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (align: CellAlign) => void
+}) {
+  return (
+    <label className={styles.field}>
+      <span>Alineación horizontal</span>
+      <select
+        value={normalizeCellAlign(value)}
+        onChange={(event) => onChange(normalizeCellAlign(event.target.value))}
+      >
+        <option value="izquierda">Izquierda</option>
+        <option value="centro">Centro</option>
+        <option value="derecha">Derecha</option>
+      </select>
+    </label>
+  )
+}
+
+function CellVAlignField({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (align: CellVAlign) => void
+}) {
+  return (
+    <label className={styles.field}>
+      <span>Alineación vertical</span>
+      <select
+        value={normalizeCellVAlign(value)}
+        onChange={(event) => onChange(normalizeCellVAlign(event.target.value))}
+      >
+        <option value="arriba">Arriba</option>
+        <option value="centro">Centro</option>
+        <option value="abajo">Abajo</option>
+      </select>
+    </label>
+  )
+}
+
+function BoxStyleFields({
+  props,
+  onChange,
+}: {
+  props: TemplateBlock['props']
+  onChange: (props: TemplateBlock['props']) => void
+}) {
+  const box = resolveBoxStyle(props)
+  return (
+    <div className={styles.boxStyle}>
+      <span className={styles.fieldLabel}>Caja del elemento</span>
+      <div className={styles.layoutRow}>
+        <label className={styles.field}>
+          <span>Espaciado interno (px)</span>
+          <input
+            type="number"
+            min={0}
+            max={48}
+            value={box.padding}
+            onChange={(event) =>
+              onChange({
+                ...props,
+                boxPadding: Math.max(0, Number(event.target.value) || 0),
+              })
+            }
+          />
+        </label>
+        <label className={styles.field}>
+          <span>Color de fondo</span>
+          <input
+            className={styles.colorInput}
+            type="color"
+            value={String(props.boxBackground || '#ffffff')}
+            onChange={(event) =>
+              onChange({
+                ...props,
+                boxBackground: event.target.value,
+              })
+            }
+          />
+        </label>
+      </div>
+      <div className={styles.layoutRow}>
+        <label className={styles.checkInline}>
+          <input
+            type="checkbox"
+            checked={box.border}
+            onChange={(event) =>
+              onChange({
+                ...props,
+                boxBorder: event.target.checked,
+                boxPadding:
+                  props.boxPadding !== undefined
+                    ? props.boxPadding
+                    : event.target.checked
+                      ? 6
+                      : 0,
+              })
+            }
+          />
+          Mostrar borde
+        </label>
+        {box.border ? (
+          <label className={styles.field}>
+            <span>Redondeo (0 = cuadrado)</span>
+            <input
+              type="number"
+              min={0}
+              max={48}
+              value={box.radius}
+              onChange={(event) =>
+                onChange({
+                  ...props,
+                  boxRadius: Math.max(0, Number(event.target.value) || 0),
+                })
+              }
+            />
+          </label>
+        ) : (
+          <div />
+        )}
+      </div>
+      {box.border ? (
+        <label className={styles.field}>
+          <span>Color de borde</span>
+          <input
+            className={styles.colorInput}
+            type="color"
+            value={box.borderColor}
+            onChange={(event) =>
+              onChange({
+                ...props,
+                boxBorderColor: event.target.value,
+              })
+            }
+          />
+        </label>
+      ) : null}
+    </div>
+  )
+}
+
+function WidthSliders({
+  widths,
+  onChange,
+}: {
+  widths: number[]
+  onChange: (widths: number[]) => void
+}) {
+  const percents = widthPercents(widths)
+  if (widths.length === 0) {
+    return (
+      <p className={styles.hint}>
+        Agrega bloques dentro del contenedor para repartir anchos.
+      </p>
+    )
+  }
+  return (
+    <div className={styles.widthSliders}>
+      <span className={styles.fieldLabel}>Ancho de celdas</span>
+      {widths.map((_, index) => (
+        <label key={index} className={styles.sliderRow}>
+          <span>
+            Celda {index + 1} <strong>{percents[index]}%</strong>
+          </span>
+          <input
+            type="range"
+            min={5}
+            max={90}
+            step={1}
+            value={Math.min(90, Math.max(5, Math.round(percents[index]) || 5))}
+            onChange={(event) => {
+              const target = Number(event.target.value)
+              const next = percents.map((pct, i) =>
+                i === index ? target : Math.max(5, pct),
+              )
+              onChange(next)
+            }}
+          />
+        </label>
+      ))}
+      <p className={styles.hint}>
+        Reparte el espacio entre celdas de la misma fila (como columnas en Word).
+      </p>
+    </div>
   )
 }
 
@@ -297,120 +542,153 @@ function ContainerDrop({
 
 function PropsPanel({
   selected,
-  parentColumns,
+  insideContainer,
   sampleDataJson,
   onChangeProps,
 }: {
   selected: TemplateBlock
-  parentColumns: number | null
+  insideContainer: boolean
   sampleDataJson: string
   onChangeProps: (props: TemplateBlock['props']) => void
 }) {
-  const showColumn = parentColumns != null && selected.type !== 'contenedor'
-
   if (selected.type === 'contenedor') {
+    const childCount = selected.children?.length ?? 0
+    const widths = parseColumnWidths(selected.props.columnWidths, childCount)
+    const titleValue = String(selected.props.title ?? '')
     return (
       <div className={styles.props}>
-        <h3>Contenedor</h3>
+        <p className={styles.hint}>
+          Una fila: cada hijo es una celda. Agregar/quitar redistribuye anchos.
+        </p>
         <label className={styles.field}>
           <span>Título (opcional)</span>
           <input
-            value={String(selected.props.title ?? '')}
+            value={titleValue}
             onChange={(event) =>
               onChangeProps({ ...selected.props, title: event.target.value })
             }
           />
         </label>
-        <label className={styles.field}>
-          <span>Columnas</span>
-          <select
-            value={Number(selected.props.columns) || 1}
-            onChange={(event) =>
+        {titleValue.trim() ? (
+          <TextStyleEditor
+            label="Título"
+            value={getBlockTitleStyle(selected)}
+            onChange={(titleStyle) =>
               onChangeProps({
                 ...selected.props,
-                columns: Number(event.target.value),
-              })
-            }
-          >
-            <option value={1}>1</option>
-            <option value={2}>2</option>
-            <option value={3}>3</option>
-          </select>
-        </label>
-        <label className={styles.field}>
-          <span>Padding</span>
-          <input
-            type="number"
-            value={Number(selected.props.padding) || 0}
-            onChange={(event) =>
-              onChangeProps({
-                ...selected.props,
-                padding: Number(event.target.value),
+                titleStyleJson: stringifyTextStyle(titleStyle),
               })
             }
           />
-        </label>
-        <label className={styles.field}>
-          <span>Fondo</span>
-          <input
-            type="color"
-            value={String(selected.props.background || '#ffffff')}
-            onChange={(event) =>
-              onChangeProps({
-                ...selected.props,
-                background: event.target.value,
-              })
-            }
-          />
-        </label>
-        <label className={styles.field}>
-          <span>Alineación</span>
-          <select
-            value={String(selected.props.align || 'izquierda')}
-            onChange={(event) =>
-              onChangeProps({ ...selected.props, align: event.target.value })
-            }
-          >
-            <option value="izquierda">Izquierda</option>
-            <option value="centro">Centro</option>
-            <option value="derecha">Derecha</option>
-          </select>
-        </label>
-        <label className={styles.check}>
-          <input
-            type="checkbox"
-            checked={Boolean(selected.props.border)}
-            onChange={(event) =>
-              onChangeProps({
-                ...selected.props,
-                border: event.target.checked,
-              })
-            }
-          />
-          Mostrar borde
-        </label>
-        <TextStyleEditor
-          label="Título"
-          value={getBlockTitleStyle(selected)}
-          onChange={(titleStyle) =>
+        ) : null}
+        <WidthSliders
+          widths={widths}
+          onChange={(next) =>
             onChangeProps({
               ...selected.props,
-              titleStyleJson: stringifyTextStyle(titleStyle),
+              columnWidths: stringifyColumnWidths(next),
             })
           }
         />
+        <div className={styles.layoutRow}>
+          <label className={styles.field}>
+            <span>Espaciado interno</span>
+            <input
+              type="number"
+              min={0}
+              value={Number(selected.props.padding) || 0}
+              onChange={(event) =>
+                onChangeProps({
+                  ...selected.props,
+                  padding: Number(event.target.value),
+                })
+              }
+            />
+          </label>
+          <label className={styles.field}>
+            <span>Color de fondo</span>
+            <input
+              className={styles.colorInput}
+              type="color"
+              value={String(selected.props.background || '#ffffff')}
+              onChange={(event) =>
+                onChangeProps({
+                  ...selected.props,
+                  background: event.target.value,
+                })
+              }
+            />
+          </label>
+        </div>
+        <div className={styles.layoutRow}>
+          <label className={styles.checkInline}>
+            <input
+              type="checkbox"
+              checked={Boolean(selected.props.border)}
+              onChange={(event) =>
+                onChangeProps({
+                  ...selected.props,
+                  border: event.target.checked,
+                })
+              }
+            />
+            Mostrar borde
+          </label>
+          {Boolean(selected.props.border) ? (
+            <label className={styles.field}>
+              <span>Redondeo (0 = cuadrado)</span>
+              <input
+                type="number"
+                min={0}
+                max={48}
+                value={Number(selected.props.borderRadius) || 0}
+                onChange={(event) =>
+                  onChangeProps({
+                    ...selected.props,
+                    borderRadius: Math.max(0, Number(event.target.value) || 0),
+                  })
+                }
+              />
+            </label>
+          ) : (
+            <div />
+          )}
+        </div>
       </div>
     )
   }
 
   if (selected.type === 'datos') {
+    const fromEtiqueta = isEtiquetaDatosBlock(selected)
     return (
       <div className={styles.props}>
+        {fromEtiqueta ? (
+          <p className={styles.hint}>
+            Origen: etiqueta DIAN. Conserva diseño de Datos (caja, alineación,
+            campos). El valor viene del JSON (`tagId` / path), no de texto
+            quemado.
+          </p>
+        ) : null}
+        {insideContainer ? (
+          <>
+            <CellAlignField
+              value={String(selected.props.cellAlign || 'izquierda')}
+              onChange={(cellAlign) =>
+                onChangeProps({ ...selected.props, cellAlign })
+              }
+            />
+            <CellVAlignField
+              value={String(selected.props.cellVAlign || 'arriba')}
+              onChange={(cellVAlign) =>
+                onChangeProps({ ...selected.props, cellVAlign })
+              }
+            />
+          </>
+        ) : null}
+        <BoxStyleFields props={selected.props} onChange={onChangeProps} />
         <DatosFieldsEditor
           block={selected}
           sampleDataJson={sampleDataJson}
-          showColumnProp={showColumn}
-          maxColumns={parentColumns ?? 3}
           onChange={onChangeProps}
         />
       </div>
@@ -421,11 +699,26 @@ function PropsPanel({
     return (
       <div className={styles.props}>
         <h3>Tabla</h3>
+        {insideContainer ? (
+          <>
+            <CellAlignField
+              value={String(selected.props.cellAlign || 'izquierda')}
+              onChange={(cellAlign) =>
+                onChangeProps({ ...selected.props, cellAlign })
+              }
+            />
+            <CellVAlignField
+              value={String(selected.props.cellVAlign || 'arriba')}
+              onChange={(cellVAlign) =>
+                onChangeProps({ ...selected.props, cellVAlign })
+              }
+            />
+          </>
+        ) : null}
+        <BoxStyleFields props={selected.props} onChange={onChangeProps} />
         <TableColumnsEditor
           block={selected}
           sampleDataJson={sampleDataJson}
-          showColumnProp={showColumn}
-          maxColumns={parentColumns ?? 3}
           onChange={onChangeProps}
         />
       </div>
@@ -436,26 +729,23 @@ function PropsPanel({
     return (
       <div className={styles.props}>
         <h3>Imagen</h3>
-        {showColumn ? (
-          <label className={styles.field}>
-            <span>Columna del contenedor</span>
-            <select
-              value={Number(selected.props.columna) || 1}
-              onChange={(event) =>
-                onChangeProps({
-                  ...selected.props,
-                  columna: Number(event.target.value),
-                })
+        {insideContainer ? (
+          <>
+            <CellAlignField
+              value={String(selected.props.cellAlign || 'izquierda')}
+              onChange={(cellAlign) =>
+                onChangeProps({ ...selected.props, cellAlign })
               }
-            >
-              {Array.from({ length: parentColumns ?? 1 }, (_, index) => (
-                <option key={index + 1} value={index + 1}>
-                  Columna {index + 1}
-                </option>
-              ))}
-            </select>
-          </label>
+            />
+            <CellVAlignField
+              value={String(selected.props.cellVAlign || 'arriba')}
+              onChange={(cellVAlign) =>
+                onChangeProps({ ...selected.props, cellVAlign })
+              }
+            />
+          </>
         ) : null}
+        <BoxStyleFields props={selected.props} onChange={onChangeProps} />
         <label className={styles.field}>
           <span>Campo JSON (URL de imagen)</span>
           <input
@@ -511,31 +801,72 @@ function PropsPanel({
     )
   }
 
+  if (selected.type === 'salto') {
+    const orientation =
+      selected.props.orientation === 'vertical' ? 'vertical' : 'horizontal'
+    return (
+      <div className={styles.props}>
+        <p className={styles.hint}>
+          Inserta una página nueva. Elige la orientación de esa página (como en el
+          anexo salud del FE, que pasa a horizontal).
+        </p>
+        <span className={styles.fieldLabel}>Orientación de la nueva página</span>
+        <div className={styles.orientIcons}>
+          <button
+            type="button"
+            className={
+              orientation === 'vertical'
+                ? styles.orientBtnActive
+                : styles.orientBtn
+            }
+            onClick={() =>
+              onChangeProps({ ...selected.props, orientation: 'vertical' })
+            }
+          >
+            <span className={styles.pageIconVertical} aria-hidden />
+            Vertical
+          </button>
+          <button
+            type="button"
+            className={
+              orientation === 'horizontal'
+                ? styles.orientBtnActive
+                : styles.orientBtn
+            }
+            onClick={() =>
+              onChangeProps({ ...selected.props, orientation: 'horizontal' })
+            }
+          >
+            <span className={styles.pageIconHorizontal} aria-hidden />
+            Horizontal
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={styles.props}>
       <h3>{selected.type === 'texto' ? 'Texto' : 'Espacio'}</h3>
-      {showColumn ? (
-        <label className={styles.field}>
-          <span>Columna del contenedor</span>
-          <select
-            value={Number(selected.props.columna) || 1}
-            onChange={(event) =>
-              onChangeProps({
-                ...selected.props,
-                columna: Number(event.target.value),
-              })
+      {insideContainer ? (
+        <>
+          <CellAlignField
+            value={String(selected.props.cellAlign || 'izquierda')}
+            onChange={(cellAlign) =>
+              onChangeProps({ ...selected.props, cellAlign })
             }
-          >
-            {Array.from({ length: parentColumns ?? 1 }, (_, index) => (
-              <option key={index + 1} value={index + 1}>
-                Columna {index + 1}
-              </option>
-            ))}
-          </select>
-        </label>
+          />
+          <CellVAlignField
+            value={String(selected.props.cellVAlign || 'arriba')}
+            onChange={(cellVAlign) =>
+              onChangeProps({ ...selected.props, cellVAlign })
+            }
+          />
+        </>
       ) : null}
       {selected.type === 'texto' ? (
         <>
+          <BoxStyleFields props={selected.props} onChange={onChangeProps} />
           <label className={styles.field}>
             <span>Contenido</span>
             <textarea
@@ -613,11 +944,7 @@ export function VisualBuilder({
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [selectedId])
 
-  const parentColumns = useMemo(() => {
-    if (!selectedInfo?.parentId) return null
-    const parent = blocks.find((block) => block.id === selectedInfo.parentId)
-    return Number(parent?.props.columns) || 1
-  }, [blocks, selectedInfo])
+  const insideContainer = Boolean(selectedInfo?.parentId)
 
   function handleDragStart(event: DragStartEvent) {
     const id = String(event.active.id)
@@ -641,14 +968,19 @@ export function VisualBuilder({
       const containerId = overId.replace('container:', '')
       if (!isChildAllowedInContainer(type)) return
       onChange(
-        blocks.map((block) =>
-          block.id === containerId
-            ? {
-                ...block,
-                children: [...(block.children ?? []), next],
-              }
-            : block,
-        ),
+        blocks.map((block) => {
+          if (block.id !== containerId) return block
+          const children = [...(block.children ?? []), next]
+          const prevWidths = parseColumnWidths(
+            block.props.columnWidths,
+            children.length - 1,
+          )
+          return patchContainer(
+            block,
+            children,
+            widthsAfterInsert(prevWidths, children.length - 1),
+          )
+        }),
       )
       setSelectedId(next.id)
       return
@@ -676,8 +1008,17 @@ export function VisualBuilder({
           if (block.id !== located.parentId) return block
           const children = [...(block.children ?? [])]
           const idx = children.findIndex((child) => child.id === overId)
-          children.splice(idx + 1, 0, next)
-          return { ...block, children }
+          const insertAt = idx + 1
+          children.splice(insertAt, 0, next)
+          const prevWidths = parseColumnWidths(
+            block.props.columnWidths,
+            children.length - 1,
+          )
+          return patchContainer(
+            block,
+            children,
+            widthsAfterInsert(prevWidths, insertAt),
+          )
         }),
       )
       setSelectedId(next.id)
@@ -693,26 +1034,16 @@ export function VisualBuilder({
         tagId: label.id,
         width: 120,
         height: 120,
-      }
-      const overBlock = findBlock(blocks, overId)?.block
-      if (overBlock?.type === 'datos') {
-        insertBlockAtOver(image, overId, 'imagen')
-        return
+        cellAlign: 'centro',
+        align: 'centro',
       }
       insertBlockAtOver(image, overId, 'imagen')
       return
     }
 
-    const field = createDatosField({
-      tagId: label.id,
-      label: label.label,
-      mode: 'campo',
-      value: label.path,
-      format: label.format,
-    })
-
     const target = findBlock(blocks, overId)
     if (target?.block.type === 'datos') {
+      const field = createFieldFromDianLabel(label)
       const fields = parseDatosFields(target.block.props.fieldsJson)
       onChange(
         updateTree(blocks, target.block.id, (block) => ({
@@ -720,6 +1051,9 @@ export function VisualBuilder({
           props: {
             ...block.props,
             fieldsJson: stringifyDatosFields([...fields, field]),
+            // Si el bloque aún no tiene origen de etiqueta, conserva diseño Datos
+            sourceTagId: block.props.sourceTagId || label.id,
+            panelName: block.props.panelName || label.label,
           },
         })),
       )
@@ -727,13 +1061,8 @@ export function VisualBuilder({
       return
     }
 
-    const datos = createBlock('datos')
-    datos.props = {
-      ...datos.props,
-      title: label.label,
-      panelName: label.label,
-      fieldsJson: stringifyDatosFields([field]),
-    }
+    // Nueva etiqueta = bloque Datos con diseño completo (no texto quemado)
+    const datos = createDatosBlockFromDianLabel(label)
     insertBlockAtOver(datos, overId, 'datos')
   }
 
@@ -741,8 +1070,9 @@ export function VisualBuilder({
     setActiveType(null)
     setActiveLabel(null)
     const { active, over } = event
-    if (!over) return
     const activeId = String(active.id)
+
+    if (!over) return
     const overId = String(over.id)
 
     const droppedLabel = labelFromPaletteId(activeId)
@@ -758,7 +1088,6 @@ export function VisualBuilder({
       return
     }
 
-    // reorder root
     const oldRoot = blocks.findIndex((block) => block.id === activeId)
     const newRoot = blocks.findIndex((block) => block.id === overId)
     if (oldRoot >= 0 && newRoot >= 0 && oldRoot !== newRoot) {
@@ -766,7 +1095,6 @@ export function VisualBuilder({
       return
     }
 
-    // reorder within same container
     const activeLoc = findBlock(blocks, activeId)
     const overLoc = findBlock(blocks, overId)
     if (
@@ -780,10 +1108,16 @@ export function VisualBuilder({
           const oldIndex = block.children.findIndex((child) => child.id === activeId)
           const newIndex = block.children.findIndex((child) => child.id === overId)
           if (oldIndex < 0 || newIndex < 0) return block
-          return {
-            ...block,
-            children: arrayMove(block.children, oldIndex, newIndex),
-          }
+          const children = arrayMove(block.children, oldIndex, newIndex)
+          const widths = parseColumnWidths(
+            block.props.columnWidths,
+            block.children.length,
+          )
+          return patchContainer(
+            block,
+            children,
+            widthsAfterMove(widths, oldIndex, newIndex),
+          )
         }),
       )
     }
@@ -802,7 +1136,8 @@ export function VisualBuilder({
         <aside className={styles.palette}>
           <h3>Bloques</h3>
           <p className={styles.hint}>
-            Arrastra al documento o dentro de un contenedor.
+            Contenedor = una fila. Cada bloque dentro es una celda; ajusta anchos
+            con sliders en propiedades.
           </p>
           <div className={styles.paletteList}>
             {BLOCK_CATALOG.map((item) => (
@@ -876,7 +1211,7 @@ export function VisualBuilder({
                         >
                           {(block.children ?? []).length === 0 ? (
                             <p className={styles.containerHint}>
-                              Suelta aquí Datos, Tabla, Texto o Espacio
+                              Suelta aquí: cada bloque = una celda en la misma fila
                             </p>
                           ) : (
                             (block.children ?? []).map((child) => (
@@ -887,8 +1222,27 @@ export function VisualBuilder({
                                 selected={selectedId === child.id}
                                 onSelect={() => setSelectedId(child.id)}
                                 onRemove={() => {
-                                  const next = removeFromTree(blocks, child.id)
-                                  onChange(next)
+                                  onChange(
+                                    blocks.map((row) => {
+                                      if (row.id !== block.id) return row
+                                      const children = row.children ?? []
+                                      const idx = children.findIndex(
+                                        (c) => c.id === child.id,
+                                      )
+                                      const nextChildren = children.filter(
+                                        (c) => c.id !== child.id,
+                                      )
+                                      const widths = parseColumnWidths(
+                                        row.props.columnWidths,
+                                        children.length,
+                                      )
+                                      return patchContainer(
+                                        row,
+                                        nextChildren,
+                                        widthsAfterRemove(widths, idx),
+                                      )
+                                    }),
+                                  )
                                   setSelectedId(block.id)
                                 }}
                               />
@@ -940,8 +1294,9 @@ export function VisualBuilder({
                       }}
                     />
                     <span className={styles.panelNameSuffix} aria-hidden="true">
-                      {' '}
-                      - Datos
+                      {isEtiquetaDatosBlock(selectedInfo.block)
+                        ? ' · Etiqueta'
+                        : ' - Datos'}
                     </span>
                   </div>
                 ) : (
@@ -964,7 +1319,7 @@ export function VisualBuilder({
             <div className={styles.propsDialogBody}>
               <PropsPanel
                 selected={selectedInfo.block}
-                parentColumns={parentColumns}
+                insideContainer={insideContainer}
                 sampleDataJson={sampleDataJson}
                 onChangeProps={(props) => {
                   onChange(

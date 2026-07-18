@@ -178,59 +178,193 @@ html, body {
   box-sizing: border-box;
   padding: ${margins.top}mm ${margins.right}mm ${margins.bottom}mm ${margins.left}mm;
   background: ${background};
-  margin: 0 auto;
+  margin: 0 auto 16px;
   box-shadow: 0 0 0 1px #e4e2de;
+}
+.page-break {
+  page-break-before: always;
+  break-before: page;
 }`
 }
 
 export function buildDocumentContentCss(): string {
   return `body {
-  font-family: "DM Sans", "Segoe UI", sans-serif;
+  font-family: "DM Sans", "Segoe UI", Helvetica, Arial, sans-serif;
   font-size: 9px;
+  line-height: 1.3;
   color: #1c1412;
 }
 
+.page {
+  box-shadow: none;
+}
+
 .container {
-  margin: 0 0 18px;
-  border-radius: 10px;
+  margin: 0 0 4px;
+  border-radius: 0;
 }
 
 .container-title,
 .datos-title {
-  margin: 0 0 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  margin: 0 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #111;
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .container-grid {
   display: grid;
-  gap: 16px;
+  gap: 6px;
+  align-items: start;
+}
+
+.container-cell {
+  min-width: 0;
+}
+
+.container-cell.align-centro .html-note,
+.container-cell.align-centro .logo-box,
+.container-cell.align-centro .qr-wrap {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.container-cell.align-derecha .html-note,
+.container-cell.align-derecha .logo-box,
+.container-cell.align-derecha .qr-wrap {
+  margin-left: auto;
 }
 
 .container-grid.cols-1 { grid-template-columns: 1fr; }
-.container-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+.container-grid.cols-2 { grid-template-columns: 1.15fr 1fr; }
 .container-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.container-grid.cols-4 { grid-template-columns: 1fr 1fr 0.75fr 1fr; }
+
+.logo-box {
+  width: 100%;
+  min-height: 72px;
+  max-width: 100px;
+  margin: 0 auto;
+  border: 1px solid #ccc;
+  background: #f7f7f7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #666;
+  text-align: center;
+  padding: 4px;
+}
+
+.qr-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 4px;
+}
+
+.datos {
+  margin: 0 0 4px;
+}
+
+.datos-stack .datos-row-stack {
+  margin: 1px 0;
+}
+
+.datos-filas {
+  /* layout por defecto: filas etiqueta|valor */
+}
+
+.datos-fiscal {
+  background: transparent;
+  margin: 2px 0 6px;
+}
+
+.datos-totales {
+  margin-left: auto;
+  width: min(100%, 220px);
+}
+
+.datos-totales .datos-row {
+  border-bottom: 1px solid #ddd;
+  padding: 1px 0;
+}
 
 .datos-row {
-  display: grid;
-  margin: 6px 0;
   align-items: baseline;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 12px 0 18px;
+.datos-label {
+  color: #333;
+  font-weight: 700;
+  margin-right: 0.15em;
 }
 
+table.invoice-table,
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 4px 0 6px;
+  font-size: 8.5px;
+}
+
+table.invoice-table th,
+table.invoice-table td,
 th, td {
-  border-bottom: 1px solid #e4e2de;
-  padding: 10px 8px;
+  border: 1px solid #555;
+  padding: 3px 4px;
+  vertical-align: top;
+}
+
+table.invoice-table th,
+th {
+  background: #efefef;
+  font-weight: 700;
+  text-align: center;
 }
 
 .note {
-  margin: 12px 0;
-  line-height: 1.45;
+  margin: 4px 0;
+  line-height: 1.35;
+}
+
+.html-note {
+  margin: 4px 0;
+}
+
+.html-note img {
+  display: block;
+}
+
+.fiscal-row {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 10px;
+  align-items: start;
+  border: 1px dashed #b98c00;
+  background: #fffdf4;
+  padding: 8px;
+  margin: 8px 0;
+}
+
+.doc-title {
+  text-align: center;
+  margin: 8px 0 4px;
+}
+
+.footer-tech {
+  margin-top: 12px;
+  padding-top: 6px;
+  border-top: 1px solid #ccc;
+  font-size: 8.5px;
+  color: #555;
 }`
 }
 

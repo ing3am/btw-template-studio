@@ -85,6 +85,28 @@ export function DatosFieldsEditor({
         />
       </label>
 
+      <label className={styles.field}>
+        <span>Diseño de campos</span>
+        <select
+          value={
+            String(block.props.presentation || 'filas') === 'caja'
+              ? 'stack'
+              : String(block.props.presentation || 'filas')
+          }
+          onChange={(event) =>
+            onChange({
+              ...block.props,
+              presentation: event.target.value,
+            })
+          }
+        >
+          <option value="filas">Filas (etiqueta + valor)</option>
+          <option value="stack">Apilado (solo valores)</option>
+          <option value="totales">Totales</option>
+          <option value="fiscal">Fiscal</option>
+        </select>
+      </label>
+
       <div className={styles.layoutRow}>
         <label className={styles.field}>
           <span>Ancho etiqueta (px)</span>

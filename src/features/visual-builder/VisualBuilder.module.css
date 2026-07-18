@@ -26,11 +26,63 @@
   font-size: 1.05rem;
 }
 
+.paletteSection {
+  margin-top: 1.15rem !important;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--color-line);
+}
+
 .hint {
   margin: 0.35rem 0 0.85rem;
   color: var(--color-muted);
   font-size: 0.78rem;
   line-height: 1.4;
+}
+
+.labelGroups {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 0.35rem;
+}
+
+.labelGroupTitle {
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-brand);
+}
+
+.labelChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.labelChip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  border: 1.5px solid var(--color-line);
+  border-radius: 8px;
+  background: var(--color-accent-soft);
+  color: var(--color-brand-deep);
+  padding: 0.28rem 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: grab;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: border-color var(--motion-fast) var(--ease-out),
+    background var(--motion-fast) var(--ease-out);
+}
+
+.labelChip:hover {
+  border-color: var(--color-brand);
+  background: #ffd6db;
 }
 
 .paletteList {
@@ -183,7 +235,7 @@
 
 .blockNested {
   margin-left: 0;
-  background: #f7f6f4;
+  background: #fff8ee;
 }
 
 .containerChildren {
@@ -204,12 +256,123 @@
   padding: 0.7rem;
 }
 
+.widthSliders {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.fieldLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.sliderRow {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.sliderRow span {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.78rem;
+  color: var(--color-muted);
+}
+
+.sliderRow strong {
+  color: var(--color-brand);
+  font-size: 0.8rem;
+}
+
+.sliderRow input[type='range'] {
+  width: 100%;
+  accent-color: var(--color-brand);
+}
+
+.boxStyle {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.15rem 0 0.65rem;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.orientIcons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+  margin-top: 0.25rem;
+}
+
+.orientBtn,
+.orientBtnActive {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 4.5rem;
+  border: 1.5px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--color-ink);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.orientBtnActive {
+  border-color: var(--color-brand);
+  background: var(--color-accent-soft);
+  color: var(--color-brand-deep);
+}
+
+.pageIconVertical,
+.pageIconHorizontal {
+  display: block;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.pageIconVertical {
+  width: 20px;
+  height: 28px;
+}
+
+.pageIconHorizontal {
+  width: 28px;
+  height: 20px;
+}
+
 .check {
   display: flex;
   align-items: center;
   gap: 0.45rem;
   font-size: 0.85rem;
   color: var(--color-ink);
+}
+
+.checkInline {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--color-ink);
+  min-height: 2.4rem;
+  margin-top: 1.35rem;
+}
+
+.layoutRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  align-items: start;
 }
 
 .field {
@@ -232,6 +395,16 @@
   background: var(--color-surface);
 }
 
+.field input[type='color'],
+.colorInput {
+  width: 100%;
+  height: 2.4rem;
+  min-height: 2.4rem;
+  padding: 0.2rem 0.35rem;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
 .field textarea {
   resize: vertical;
 }
@@ -243,6 +416,21 @@
   color: #fffcf7;
   font-weight: 600;
   box-shadow: var(--shadow);
+}
+
+.overlayLabel {
+  max-width: 220px;
+  padding: 0.45rem 0.7rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-brand);
+  background: var(--color-accent-soft);
+  color: var(--color-brand-deep);
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .blockTitle {
@@ -436,7 +624,7 @@
 
 @media (max-width: 1100px) {
   .builder {
-    grid-template-columns: 200px minmax(0, 1fr);
+    grid-template-columns: 150px minmax(0, 1fr);
   }
 
   .propsDialog {

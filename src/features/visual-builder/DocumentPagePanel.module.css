@@ -84,3 +84,51 @@
   padding: 0.15rem;
   height: 2rem;
 }
+
+.orientIcons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.orientBtn,
+.orientBtnActive {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 4.2rem;
+  border: 1.5px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--color-ink);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.45rem;
+}
+
+.orientBtnActive {
+  border-color: var(--color-brand);
+  background: var(--color-accent-soft);
+  color: var(--color-brand-deep);
+}
+
+.pageIconVertical,
+.pageIconHorizontal {
+  display: block;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.pageIconVertical {
+  width: 18px;
+  height: 26px;
+}
+
+.pageIconHorizontal {
+  width: 26px;
+  height: 18px;
+}

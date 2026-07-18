@@ -1,10 +1,19 @@
 import {
+  applyPageOrientation,
   buildFullDocumentCss,
   defaultPageSettings,
+  normalizePageSettings,
+  type PageOrientation,
   type PageSettings,
 } from './pageSettings'
+import { boxStyleToInline, resolveBoxStyle } from './boxStyle'
 import {
-  clampColumn,
+  normalizeCellAlign,
+  normalizeCellVAlign,
+  parseColumnWidths,
+  stringifyColumnWidths,
+} from './containerLayout'
+import {
   getBlockContentStyle,
   getBlockTitleStyle,
   parseDatosFields,
@@ -44,8 +53,17 @@ function alignCss(align: Align | string): string {
   return 'left'
 }
 
+function formatFieldLabel(label: string): string {
+  const text = label.trim()
+  if (!text) return ''
+  return text.endsWith(':') ? text : `${text}:`
+}
+
 function renderLeaf(block: TemplateBlock): string {
   const p = block.props
+  const box = resolveBoxStyle(p)
+  const boxInline = boxStyleToInline(box)
+
   switch (block.type) {
     case 'datos': {
       const fields = parseDatosFields(p.fieldsJson)
@@ -53,14 +71,46 @@ function renderLeaf(block: TemplateBlock): string {
       const labelWidth = Math.max(40, Number(p.labelWidth) || 120)
       const gapRaw = Number(p.labelValueGap)
       const labelValueGap = Number.isFinite(gapRaw) ? Math.max(0, gapRaw) : 8
-      const rowStyle = `display:grid;grid-template-columns:${labelWidth}px 1fr;gap:${labelValueGap}px;margin:6px 0;align-items:baseline`
+      const presentation = String(p.presentation || 'filas')
+      const layout =
+        presentation === 'caja' ? 'stack' : presentation
+      const variantClass =
+        layout === 'stack'
+          ? 'datos-stack'
+          : layout === 'totales'
+            ? 'datos-totales'
+            : layout === 'fiscal'
+              ? 'datos-fiscal'
+              : 'datos-filas'
+
       const rows = fields
-        .map(
-          (field) =>
-            `<div class="datos-row" style="${rowStyle}">${styled('span', field.labelStyle, esc(field.label), 'datos-label')}${styled('span', field.valueStyle, renderDatosValue(field.mode, field.value, field.format), 'datos-value')}</div>`,
-        )
+        .map((field) => {
+          const valueHtml = styled(
+            'span',
+            field.valueStyle,
+            renderDatosValue(field.mode, field.value, field.format),
+            'datos-value',
+          )
+          const labelText = formatFieldLabel(field.label)
+          if (!labelText) {
+            return `<div class="datos-row datos-row-stack">${valueHtml}</div>`
+          }
+          const labelHtml = styled(
+            'span',
+            field.labelStyle,
+            esc(labelText),
+            'datos-label',
+          )
+          // stack / fiscal: etiqueta y valor en la misma línea (Etiqueta: valor)
+          if (layout === 'stack' || layout === 'fiscal') {
+            return `<div class="datos-row datos-row-stack">${labelHtml} ${valueHtml}</div>`
+          }
+          const rowStyle = `display:grid;grid-template-columns:${labelWidth}px 1fr;gap:${labelValueGap}px;margin:3px 0;align-items:baseline`
+          return `<div class="datos-row" style="${rowStyle}">${labelHtml}${valueHtml}</div>`
+        })
         .join('\n')
-      return `<section class="datos" data-block="${block.id}">
+
+      return `<section class="datos ${variantClass}" data-block="${block.id}" style="${boxInline}">
   ${p.title ? styled('h2', titleStyle, esc(p.title), 'datos-title') : ''}
   ${rows}
 </section>`
@@ -77,18 +127,24 @@ function renderLeaf(block: TemplateBlock): string {
           styled('td', column.cellStyle, `{{${esc(column.property)}}}`),
         )
         .join('')
-      return `<table data-block="${block.id}">
+      return `<div class="table-wrap" data-block="${block.id}" style="${boxInline}">
+<table class="invoice-table">
   <thead><tr>${head}</tr></thead>
   <tbody>
     {{#each ${esc(p.arrayPath)}}}
     <tr>${cells}</tr>
     {{/each}}
   </tbody>
-</table>`
+</table>
+</div>`
     }
     case 'texto': {
       const style = getBlockContentStyle(block)
-      return styled('p', style, esc(p.content), 'note')
+      const content = String(p.content ?? '')
+      if (content.startsWith('@@html:')) {
+        return `<div class="note html-note" data-block="${block.id}" style="${boxInline}">${content.slice(7)}</div>`
+      }
+      return `<div class="note-wrap" data-block="${block.id}" style="${boxInline}">${styled('p', style, esc(content), 'note')}</div>`
     }
     case 'imagen': {
       const width = Math.max(24, Number(p.width) || 120)
@@ -108,40 +164,79 @@ function renderLeaf(block: TemplateBlock): string {
 }
 
 function renderContainer(block: TemplateBlock): string {
-  const columns = clampColumn(Number(block.props.columns) || 1, 3)
+  const children = block.children ?? []
+  const count = children.length
   const padding = Number(block.props.padding) || 0
   const border = Boolean(block.props.border)
+  const borderRadius = Math.max(0, Number(block.props.borderRadius) || 0)
   const background = String(block.props.background || '#ffffff')
-  const align = alignCss(String(block.props.align || 'izquierda'))
   const titleStyle = getBlockTitleStyle(block)
-  const children = block.children ?? []
 
-  const buckets: TemplateBlock[][] = Array.from({ length: columns }, () => [])
-  for (const child of children) {
-    const col = clampColumn(Number(child.props.columna) || 1, columns) - 1
-    buckets[col].push(child)
+  if (count === 0) {
+    return `<section class="container" data-block="${block.id}" style="padding:${padding}px;background:${esc(background)};border:${border ? '1px solid #e4e2de' : '0'};border-radius:${borderRadius}px"></section>`
   }
 
-  const colsHtml = buckets
-    .map(
-      (bucket, index) =>
-        `<div class="col col-${index + 1}">
-  ${bucket.map(renderLeaf).join('\n  ')}
-</div>`,
-    )
+  const widths = parseColumnWidths(block.props.columnWidths, count)
+  const gridColumns = widths.map((n) => `${n}fr`).join(' ')
+
+  const colsHtml = children
+    .map((child) => {
+      const cellAlign = normalizeCellAlign(child.props.cellAlign)
+      const cellVAlign = normalizeCellVAlign(child.props.cellVAlign)
+      const textAlign = alignCss(cellAlign)
+      const justify =
+        cellVAlign === 'centro'
+          ? 'center'
+          : cellVAlign === 'abajo'
+            ? 'flex-end'
+            : 'flex-start'
+      return `<div class="container-cell align-${cellAlign} valign-${cellVAlign}" style="text-align:${textAlign};min-width:0;display:flex;flex-direction:column;justify-content:${justify}">
+  ${renderLeaf(child)}
+</div>`
+    })
     .join('\n')
 
-  return `<section class="container" data-block="${block.id}" style="padding:${padding}px;background:${esc(background)};border:${border ? '1px solid #e4e2de' : '0'};text-align:${align}">
+  return `<section class="container" data-block="${block.id}" style="padding:${padding}px;background:${esc(background)};border:${border ? '1px solid #e4e2de' : '0'};border-radius:${borderRadius}px">
   ${block.props.title ? styled('h2', titleStyle, esc(block.props.title), 'container-title') : ''}
-  <div class="container-grid cols-${columns}">
+  <div class="container-grid" style="display:grid;gap:6px;grid-template-columns:${gridColumns};align-items:stretch" data-widths="${esc(stringifyColumnWidths(widths))}">
   ${colsHtml}
   </div>
 </section>`
 }
 
 function renderBlock(block: TemplateBlock): string {
+  if (block.type === 'salto') return ''
   if (block.type === 'contenedor') return renderContainer(block)
   return renderLeaf(block)
+}
+
+function splitIntoPages(
+  blocks: TemplateBlock[],
+  documentOrientation: PageOrientation,
+): { orientation: PageOrientation; blocks: TemplateBlock[] }[] {
+  const pages: { orientation: PageOrientation; blocks: TemplateBlock[] }[] = []
+  let current: { orientation: PageOrientation; blocks: TemplateBlock[] } = {
+    orientation: documentOrientation,
+    blocks: [],
+  }
+
+  for (const block of blocks) {
+    if (block.type === 'salto') {
+      pages.push(current)
+      const nextOrient = String(block.props.orientation || '')
+      current = {
+        orientation:
+          nextOrient === 'horizontal' || nextOrient === 'vertical'
+            ? nextOrient
+            : documentOrientation,
+        blocks: [],
+      }
+      continue
+    }
+    current.blocks.push(block)
+  }
+  pages.push(current)
+  return pages.filter((page, index) => page.blocks.length > 0 || index === 0)
 }
 
 /** @deprecated use buildFullDocumentCss from pageSettings */
@@ -154,7 +249,21 @@ export function serializeBlocksToDocument(
   html: string
   css: string
 } {
-  const body = blocks.map(renderBlock).join('\n\n')
+  const base = normalizePageSettings(page)
+  const pages = splitIntoPages(blocks, base.orientation)
+
+  const body = pages
+    .map((section, index) => {
+      const sectionPage = applyPageOrientation(base, section.orientation)
+      const dims = normalizePageSettings(sectionPage)
+      const breakClass = index > 0 ? ' page-break' : ''
+      const content = section.blocks.map(renderBlock).join('\n\n')
+      return `<div class="page${breakClass}" data-orientation="${section.orientation}" style="width:${dims.widthMm}mm;min-height:${dims.heightMm}mm;padding:${dims.margins.top}mm ${dims.margins.right}mm ${dims.margins.bottom}mm ${dims.margins.left}mm;background:${esc(dims.background)}">
+${content}
+</div>`
+    })
+    .join('\n\n')
+
   const html = `<!DOCTYPE html>
 <html lang="es-CO">
 <head>
@@ -162,10 +271,8 @@ export function serializeBlocksToDocument(
   <title>Documento</title>
 </head>
 <body>
-<div class="page">
 ${body}
-</div>
 </body>
 </html>`
-  return { html, css: buildFullDocumentCss(page) }
+  return { html, css: buildFullDocumentCss(base) }
 }

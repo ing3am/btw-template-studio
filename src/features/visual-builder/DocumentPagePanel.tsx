@@ -63,23 +63,39 @@ export function DocumentPagePanel({ page, onChange }: DocumentPagePanelProps) {
               </select>
             </label>
 
-            <label className={styles.field}>
+            <div className={styles.field}>
               <span>Orientación</span>
-              <select
-                value={page.orientation}
-                onChange={(event) =>
-                  onChange(
-                    applyPageOrientation(
-                      page,
-                      event.target.value as PageSettings['orientation'],
-                    ),
-                  )
-                }
-              >
-                <option value="vertical">Vertical</option>
-                <option value="horizontal">Horizontal</option>
-              </select>
-            </label>
+              <div className={styles.orientIcons}>
+                <button
+                  type="button"
+                  className={
+                    page.orientation === 'vertical'
+                      ? styles.orientBtnActive
+                      : styles.orientBtn
+                  }
+                  onClick={() =>
+                    onChange(applyPageOrientation(page, 'vertical'))
+                  }
+                >
+                  <span className={styles.pageIconVertical} aria-hidden />
+                  Vertical
+                </button>
+                <button
+                  type="button"
+                  className={
+                    page.orientation === 'horizontal'
+                      ? styles.orientBtnActive
+                      : styles.orientBtn
+                  }
+                  onClick={() =>
+                    onChange(applyPageOrientation(page, 'horizontal'))
+                  }
+                >
+                  <span className={styles.pageIconHorizontal} aria-hidden />
+                  Horizontal
+                </button>
+              </div>
+            </div>
 
             {page.sizeId === 'custom' ? (
               <>
@@ -192,7 +208,7 @@ export function DocumentPagePanel({ page, onChange }: DocumentPagePanelProps) {
             </label>
 
             <label className={styles.field}>
-              <span>Fondo</span>
+              <span>Color de fondo</span>
               <input
                 type="color"
                 value={page.background}
