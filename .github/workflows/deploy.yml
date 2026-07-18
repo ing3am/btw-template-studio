@@ -58,6 +58,7 @@ jobs:
           overwrite: true
 
       - name: Upload nginx auth proxy script
+        continue-on-error: true
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -70,6 +71,7 @@ jobs:
           overwrite: true
 
       - name: Configure nginx /api-auth proxy
+        continue-on-error: true
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -98,4 +100,7 @@ jobs:
             chmod +x "$SCRIPT"
             export DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}"
             export SUDO_PASSWORD="${{ secrets.DEPLOY_PASSWORD }}"
-            bash "$SCRIPT"
+            bash "$SCRIPT" || {
+              echo "::warning::nginx /api-auth proxy not applied (needs root). Static deploy is OK."
+              exit 0
+            }
