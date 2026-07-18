@@ -66,6 +66,32 @@
   margin: auto 0;
 }
 
+.brandBody {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: clamp(1rem, 3vw, 2rem);
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+}
+
+.brandVisual {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+}
+
+.brandArt {
+  display: block;
+  width: min(100%, 28rem);
+  height: auto;
+  max-height: min(62vh, 28rem);
+  object-fit: contain;
+  filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.45));
+}
+
 .eyebrow {
   margin: 0 0 0.55rem;
   font-size: 0.78rem;
@@ -339,6 +365,16 @@
 
   .brandInner {
     margin: 0;
+  }
+
+  .brandBody {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .brandArt {
+    max-height: 14rem;
+    width: min(100%, 16rem);
   }
 
   .brandTitle {

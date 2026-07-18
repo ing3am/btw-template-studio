@@ -15,6 +15,7 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { DEMO_CREDENTIALS } from '@/features/auth/api'
 import { Button } from '@/shared/ui/Button'
 import { useToast } from '@/shared/ui/Toast'
+import loginArt from '@/assets/imglogin.png'
 import styles from './LoginPage.module.css'
 
 type LocationState = {
@@ -97,30 +98,40 @@ export function LoginPage() {
           <span className={styles.logoText}>BTW</span>
         </div>
 
-        <div className={styles.brandInner}>
-          <p className={styles.eyebrow}>BTW</p>
-          <h1 className={styles.brandTitle}>Template Studio</h1>
-          <p className={styles.brandLead}>
-            Diseña representaciones gráficas de facturación electrónica con
-            control y claridad.
-          </p>
+        <div className={styles.brandBody}>
+          <div className={styles.brandInner}>
+            <p className={styles.eyebrow}>BTW</p>
+            <h1 className={styles.brandTitle}>Template Studio</h1>
+            <p className={styles.brandLead}>
+              Diseña representaciones gráficas de facturación electrónica con
+              control y claridad.
+            </p>
 
-          <ul className={styles.features}>
-            {FEATURES.map((item) => {
-              const Icon = item.icon
-              return (
-                <li key={item.title} className={styles.feature}>
-                  <span className={styles.featureIcon} aria-hidden="true">
-                    <Icon size={16} />
-                  </span>
-                  <div>
-                    <strong>{item.title}</strong>
-                    <p>{item.description}</p>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
+            <ul className={styles.features}>
+              {FEATURES.map((item) => {
+                const Icon = item.icon
+                return (
+                  <li key={item.title} className={styles.feature}>
+                    <span className={styles.featureIcon} aria-hidden="true">
+                      <Icon size={16} />
+                    </span>
+                    <div>
+                      <strong>{item.title}</strong>
+                      <p>{item.description}</p>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+
+          <div className={styles.brandVisual}>
+            <img
+              className={styles.brandArt}
+              src={loginArt}
+              alt="Factura electrónica PDF"
+            />
+          </div>
         </div>
 
         <p className={styles.brandFoot}>Plantillas PDF · Colombia</p>
