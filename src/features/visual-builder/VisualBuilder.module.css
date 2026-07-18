@@ -392,7 +392,42 @@
 
 .sliderRow input[type='range'] {
   width: 100%;
-  accent-color: var(--color-brand);
+  height: 1.35rem;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.sliderRow input[type='range']::-webkit-slider-runnable-track {
+  height: 0.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-accent) 28%, var(--color-line));
+}
+
+.sliderRow input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0.95rem;
+  height: 0.95rem;
+  margin-top: -0.3rem;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 45%, transparent);
+}
+
+.sliderRow input[type='range']::-moz-range-track {
+  height: 0.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-accent) 28%, var(--color-line));
+}
+
+.sliderRow input[type='range']::-moz-range-thumb {
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 45%, transparent);
 }
 
 .boxStyle {
