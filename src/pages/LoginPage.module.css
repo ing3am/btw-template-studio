@@ -7,8 +7,9 @@
 
 .brand {
   position: relative;
-  display: grid;
-  grid-template-rows: 1fr auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   padding: clamp(2rem, 5vw, 3.5rem);
   color: #fffcf7;
   overflow: hidden;
@@ -31,9 +32,7 @@
 
 .brandInner {
   position: relative;
-  align-self: end;
   max-width: 28rem;
-  padding-bottom: 2rem;
 }
 
 .eyebrow {
@@ -63,7 +62,9 @@
 }
 
 .brandFoot {
-  position: relative;
+  position: absolute;
+  left: clamp(2rem, 5vw, 3.5rem);
+  bottom: clamp(1.25rem, 3vw, 2rem);
   margin: 0;
   font-size: 0.75rem;
   letter-spacing: 0.06em;
@@ -259,12 +260,17 @@
 
   .brand {
     min-height: 38vh;
-    padding: 1.5rem 1.25rem 1.75rem;
+    padding: 1.5rem 1.25rem 2.75rem;
+    justify-content: center;
   }
 
   .brandInner {
-    align-self: end;
-    padding-bottom: 0.5rem;
+    padding-bottom: 0;
+  }
+
+  .brandFoot {
+    left: 1.25rem;
+    bottom: 1rem;
   }
 
   .brandTitle {
