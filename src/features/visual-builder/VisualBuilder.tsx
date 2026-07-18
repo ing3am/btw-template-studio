@@ -26,16 +26,20 @@ import {
   Type,
   Space,
   Rows3,
+  Image as ImageIcon,
   X,
+  Tag,
 } from 'lucide-react'
 import {
   BLOCK_CATALOG,
   createBlock,
+  createDatosField,
   getBlockContentStyle,
   getBlockTitleStyle,
   isChildAllowedInContainer,
   parseDatosFields,
   parseTableColumns,
+  stringifyDatosFields,
   stringifyTextStyle,
   type BlockType,
   type TemplateBlock,
@@ -45,6 +49,8 @@ import { TableColumnsEditor } from './TableColumnsEditor'
 import { TextStyleEditor } from './TextStyleEditor'
 import { DocumentPagePanel } from './DocumentPagePanel'
 import type { PageSettings } from './pageSettings'
+import { filterDianLabels, type DianLabel } from './dianLabels'
+import { labelFromPaletteId, missingRequiredLabels } from './dianPresence'
 import styles from './VisualBuilder.module.css'
 
 const ICONS: Record<BlockType, typeof Box> = {
@@ -53,6 +59,7 @@ const ICONS: Record<BlockType, typeof Box> = {
   tabla: Table2,
   texto: Type,
   espacio: Space,
+  imagen: ImageIcon,
 }
 
 type VisualBuilderProps = {
@@ -191,9 +198,34 @@ function summarize(block: TemplateBlock): string {
       return String(block.props.content)
     case 'espacio':
       return `${block.props.size}px`
+    case 'imagen':
+      return `${block.props.srcPath || 'Sin imagen'} · ${block.props.width}×${block.props.height}`
     default:
       return block.type
   }
+}
+
+function LabelPaletteItem({ label }: { label: DianLabel }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `label:${label.id}`,
+  })
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      className={styles.paletteItem}
+      style={{ opacity: isDragging ? 0.45 : 1 }}
+      {...listeners}
+      {...attributes}
+    >
+      <span className={styles.paletteIcon}>
+        {label.kind === 'image' ? <ImageIcon size={16} /> : <Tag size={16} />}
+      </span>
+      <span>
+        <strong>{label.label}</strong>
+      </span>
+    </button>
+  )
 }
 
 function PaletteItem({ type }: { type: BlockType }) {
@@ -396,6 +428,85 @@ function PropsPanel({
     )
   }
 
+  if (selected.type === 'imagen') {
+    return (
+      <div className={styles.props}>
+        <h3>Imagen</h3>
+        {showColumn ? (
+          <label className={styles.field}>
+            <span>Columna del contenedor</span>
+            <select
+              value={Number(selected.props.columna) || 1}
+              onChange={(event) =>
+                onChangeProps({
+                  ...selected.props,
+                  columna: Number(event.target.value),
+                })
+              }
+            >
+              {Array.from({ length: parentColumns ?? 1 }, (_, index) => (
+                <option key={index + 1} value={index + 1}>
+                  Columna {index + 1}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        <label className={styles.field}>
+          <span>Campo JSON (URL de imagen)</span>
+          <input
+            type="text"
+            value={String(selected.props.srcPath ?? '')}
+            onChange={(event) =>
+              onChangeProps({ ...selected.props, srcPath: event.target.value })
+            }
+          />
+        </label>
+        <label className={styles.field}>
+          <span>Ancho (px)</span>
+          <input
+            type="number"
+            min={24}
+            value={Number(selected.props.width) || 120}
+            onChange={(event) =>
+              onChangeProps({
+                ...selected.props,
+                width: Number(event.target.value) || 120,
+              })
+            }
+          />
+        </label>
+        <label className={styles.field}>
+          <span>Alto (px)</span>
+          <input
+            type="number"
+            min={24}
+            value={Number(selected.props.height) || 120}
+            onChange={(event) =>
+              onChangeProps({
+                ...selected.props,
+                height: Number(event.target.value) || 120,
+              })
+            }
+          />
+        </label>
+        <label className={styles.field}>
+          <span>Alineación</span>
+          <select
+            value={String(selected.props.align || 'izquierda')}
+            onChange={(event) =>
+              onChangeProps({ ...selected.props, align: event.target.value })
+            }
+          >
+            <option value="izquierda">Izquierda</option>
+            <option value="centro">Centro</option>
+            <option value="derecha">Derecha</option>
+          </select>
+        </label>
+      </div>
+    )
+  }
+
   return (
     <div className={styles.props}>
       <h3>{selected.type === 'texto' ? 'Texto' : 'Espacio'}</h3>
@@ -473,10 +584,17 @@ export function VisualBuilder({
 }: VisualBuilderProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [activeType, setActiveType] = useState<BlockType | null>(null)
+  const [activeLabel, setActiveLabel] = useState<DianLabel | null>(null)
+  const [labelQuery, setLabelQuery] = useState('')
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   )
 
+  const missingLabels = useMemo(() => missingRequiredLabels(blocks), [blocks])
+  const filteredLabels = useMemo(
+    () => filterDianLabels(labelQuery),
+    [labelQuery],
+  )
   const selectedInfo = useMemo(
     () => (selectedId ? findBlock(blocks, selectedId) : null),
     [blocks, selectedId],
@@ -501,66 +619,137 @@ export function VisualBuilder({
     const id = String(event.active.id)
     if (id.startsWith('palette:')) {
       setActiveType(id.replace('palette:', '') as BlockType)
+      setActiveLabel(null)
+      return
     }
+    if (id.startsWith('label:')) {
+      setActiveLabel(labelFromPaletteId(id))
+      setActiveType(null)
+    }
+  }
+
+  function insertBlockAtOver(
+    next: TemplateBlock,
+    overId: string,
+    type: BlockType,
+  ) {
+    if (overId.startsWith('container:')) {
+      const containerId = overId.replace('container:', '')
+      if (!isChildAllowedInContainer(type)) return
+      onChange(
+        blocks.map((block) =>
+          block.id === containerId
+            ? {
+                ...block,
+                children: [...(block.children ?? []), next],
+              }
+            : block,
+        ),
+      )
+      setSelectedId(next.id)
+      return
+    }
+
+    if (overId === 'root-drop') {
+      onChange([...blocks, next])
+      setSelectedId(next.id)
+      return
+    }
+
+    const overRootIndex = blocks.findIndex((block) => block.id === overId)
+    if (overRootIndex >= 0) {
+      const copy = [...blocks]
+      copy.splice(overRootIndex + 1, 0, next)
+      onChange(copy)
+      setSelectedId(next.id)
+      return
+    }
+
+    const located = findBlock(blocks, overId)
+    if (located?.parentId && isChildAllowedInContainer(type)) {
+      onChange(
+        blocks.map((block) => {
+          if (block.id !== located.parentId) return block
+          const children = [...(block.children ?? [])]
+          const idx = children.findIndex((child) => child.id === overId)
+          children.splice(idx + 1, 0, next)
+          return { ...block, children }
+        }),
+      )
+      setSelectedId(next.id)
+    }
+  }
+
+  function handleLabelDrop(label: DianLabel, overId: string) {
+    if (label.kind === 'image') {
+      const image = createBlock('imagen')
+      image.props = {
+        ...image.props,
+        srcPath: label.path,
+        tagId: label.id,
+        width: 120,
+        height: 120,
+      }
+      const overBlock = findBlock(blocks, overId)?.block
+      if (overBlock?.type === 'datos') {
+        insertBlockAtOver(image, overId, 'imagen')
+        return
+      }
+      insertBlockAtOver(image, overId, 'imagen')
+      return
+    }
+
+    const field = createDatosField({
+      tagId: label.id,
+      label: label.label,
+      mode: 'campo',
+      value: label.path,
+      format: label.format,
+    })
+
+    const target = findBlock(blocks, overId)
+    if (target?.block.type === 'datos') {
+      const fields = parseDatosFields(target.block.props.fieldsJson)
+      onChange(
+        updateTree(blocks, target.block.id, (block) => ({
+          ...block,
+          props: {
+            ...block.props,
+            fieldsJson: stringifyDatosFields([...fields, field]),
+          },
+        })),
+      )
+      setSelectedId(target.block.id)
+      return
+    }
+
+    const datos = createBlock('datos')
+    datos.props = {
+      ...datos.props,
+      title: label.label,
+      fieldsJson: stringifyDatosFields([field]),
+    }
+    insertBlockAtOver(datos, overId, 'datos')
   }
 
   function handleDragEnd(event: DragEndEvent) {
     setActiveType(null)
+    setActiveLabel(null)
     const { active, over } = event
     if (!over) return
     const activeId = String(active.id)
     const overId = String(over.id)
 
+    const droppedLabel = labelFromPaletteId(activeId)
+    if (droppedLabel) {
+      handleLabelDrop(droppedLabel, overId)
+      return
+    }
+
     if (activeId.startsWith('palette:')) {
       const type = activeId.replace('palette:', '') as BlockType
       const next = createBlock(type)
-
-      if (overId.startsWith('container:')) {
-        const containerId = overId.replace('container:', '')
-        if (!isChildAllowedInContainer(type)) return
-        onChange(
-          blocks.map((block) =>
-            block.id === containerId
-              ? {
-                  ...block,
-                  children: [...(block.children ?? []), next],
-                }
-              : block,
-          ),
-        )
-        setSelectedId(next.id)
-        return
-      }
-
-      if (overId === 'root-drop') {
-        onChange([...blocks, next])
-        setSelectedId(next.id)
-        return
-      }
-
-      const overRootIndex = blocks.findIndex((block) => block.id === overId)
-      if (overRootIndex >= 0) {
-        const copy = [...blocks]
-        copy.splice(overRootIndex + 1, 0, next)
-        onChange(copy)
-        setSelectedId(next.id)
-        return
-      }
-
-      // dropped over a child: add to that child's parent container
-      const located = findBlock(blocks, overId)
-      if (located?.parentId && isChildAllowedInContainer(type)) {
-        onChange(
-          blocks.map((block) => {
-            if (block.id !== located.parentId) return block
-            const children = [...(block.children ?? [])]
-            const idx = children.findIndex((child) => child.id === overId)
-            children.splice(idx + 1, 0, next)
-            return { ...block, children }
-          }),
-        )
-        setSelectedId(next.id)
-      }
+      insertBlockAtOver(next, overId, type)
       return
     }
 
@@ -615,10 +804,42 @@ export function VisualBuilder({
               <PaletteItem key={item.type} type={item.type} />
             ))}
           </div>
+
+          <h3 className={styles.paletteSection}>Etiquetas DIAN</h3>
+          <p className={styles.hint}>
+            Arrastra a un bloque Datos o al documento.
+          </p>
+          <label className={styles.searchField}>
+            <span className={styles.srOnly}>Buscar etiquetas</span>
+            <input
+              type="search"
+              placeholder="Buscar etiqueta…"
+              value={labelQuery}
+              onChange={(event) => setLabelQuery(event.target.value)}
+            />
+          </label>
+          <div className={styles.paletteList}>
+            {filteredLabels.map((label) => (
+              <LabelPaletteItem key={label.id} label={label} />
+            ))}
+            {filteredLabels.length === 0 ? (
+              <p className={styles.hint}>Sin resultados</p>
+            ) : null}
+          </div>
         </aside>
 
         <section className={styles.canvas}>
           <DocumentPagePanel page={page} onChange={onPageChange} />
+          {missingLabels.length > 0 ? (
+            <div className={styles.missingBanner} role="status">
+              <strong>
+                Faltan {missingLabels.length} etiquetas obligatorias DIAN
+              </strong>
+              <span>
+                {missingLabels.map((item) => item.label).join(' · ')}
+              </span>
+            </div>
+          ) : null}
           <div className={styles.canvasHeader}>
             <h3>Bloques</h3>
             <span>{blocks.length} bloques</span>
@@ -734,6 +955,9 @@ export function VisualBuilder({
           <div className={styles.overlayChip}>
             {BLOCK_CATALOG.find((item) => item.type === activeType)?.label}
           </div>
+        ) : null}
+        {activeLabel ? (
+          <div className={styles.overlayChip}>{activeLabel.label}</div>
         ) : null}
       </DragOverlay>
     </DndContext>

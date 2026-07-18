@@ -1,42 +1,11 @@
 import { createDefaultFacturaBlocks } from '@/features/visual-builder/types'
 import { serializeBlocksToDocument } from '@/features/visual-builder/serializeToHtml'
 import { defaultPageSettings } from '@/features/visual-builder/pageSettings'
+import {
+  DIAN_SAMPLE_DATA_JSON,
+  DIAN_SCHEMA_JSON,
+} from '@/features/visual-builder/dianSampleData'
 import type { TemplateBundle } from './types'
-
-const DEFAULT_SCHEMA = `{
-  "type": "object",
-  "required": ["numero", "emisor", "cliente", "items", "totales"]
-}`
-
-const DEFAULT_SAMPLE = `{
-  "numero": "FE-2026-00123",
-  "emisor": {
-    "razonSocial": "BTW Soluciones S.A.S.",
-    "nit": "900123456-1"
-  },
-  "cliente": {
-    "nombre": "Comercial Andina Ltda.",
-    "nit": "800987654-3",
-    "ciudad": "Bogotá D.C."
-  },
-  "items": [
-    {
-      "descripcion": "Licencia plataforma documentos electrónicos",
-      "cantidad": 1,
-      "valor": 1200000
-    },
-    {
-      "descripcion": "Soporte mensual",
-      "cantidad": 1,
-      "valor": 250000
-    }
-  ],
-  "totales": {
-    "subtotal": 1450000,
-    "iva": 275500,
-    "total": 1725500
-  }
-}`
 
 function now() {
   return new Date().toISOString()
@@ -51,8 +20,8 @@ function buildVersion(templateId: string, versionId: string) {
     versionNumber: 1,
     html,
     css,
-    schemaJson: DEFAULT_SCHEMA,
-    sampleDataJson: DEFAULT_SAMPLE,
+    schemaJson: DIAN_SCHEMA_JSON,
+    sampleDataJson: DIAN_SAMPLE_DATA_JSON,
     blocksJson: JSON.stringify(blocks),
     createdAt: now(),
     isPublished: false,

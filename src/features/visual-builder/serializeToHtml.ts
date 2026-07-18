@@ -90,6 +90,16 @@ function renderLeaf(block: TemplateBlock): string {
       const style = getBlockContentStyle(block)
       return styled('p', style, esc(p.content), 'note')
     }
+    case 'imagen': {
+      const width = Math.max(24, Number(p.width) || 120)
+      const height = Math.max(24, Number(p.height) || 120)
+      const align = alignCss(String(p.align || 'izquierda'))
+      const src = String(p.srcPath || '').trim()
+      const tokenSrc = src ? `{{${src}}}` : ''
+      return `<div class="image-block" data-block="${block.id}" style="text-align:${align}">
+  <img src="${tokenSrc}" alt="" width="${width}" height="${height}" style="max-width:100%;height:auto;width:${width}px" />
+</div>`
+    }
     case 'espacio':
       return `<div class="spacer" data-block="${block.id}" style="height:${Number(p.size) || 16}px"></div>`
     default:

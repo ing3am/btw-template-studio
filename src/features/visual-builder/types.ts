@@ -10,8 +10,15 @@ import {
   stringifyTextStyle,
   type TextStyle,
 } from './textStyle'
+import { getDianLabel } from './dianLabels'
 
-export type BlockType = 'contenedor' | 'datos' | 'tabla' | 'texto' | 'espacio'
+export type BlockType =
+  | 'contenedor'
+  | 'datos'
+  | 'tabla'
+  | 'texto'
+  | 'espacio'
+  | 'imagen'
 
 export type DatosFieldMode = 'texto' | 'campo'
 export type DatosFormat = 'ninguno' | 'moneda' | 'fecha'
@@ -25,6 +32,8 @@ export type DatosField = {
   format: DatosFormat
   labelStyle: TextStyle
   valueStyle: TextStyle
+  /** DIAN catalog id when created from a label */
+  tagId?: string
 }
 
 export type TableColumn = {
@@ -54,6 +63,7 @@ export function createDatosField(partial?: Partial<DatosField>): DatosField {
         : 'ninguno',
     labelStyle: normalizeTextStyle(partial?.labelStyle, defaultLabelStyle()),
     valueStyle: normalizeTextStyle(partial?.valueStyle, defaultValueStyle()),
+    ...(partial?.tagId ? { tagId: partial.tagId } : {}),
   }
 }
 
@@ -118,69 +128,96 @@ export function getBlockContentStyle(block: TemplateBlock): TextStyle {
   return parseTextStyleJson(block.props.contentStyleJson, defaultBodyStyle())
 }
 
+function fieldFromTag(tagId: string, overrides?: Partial<DatosField>): DatosField {
+  const tag = getDianLabel(tagId)
+  if (!tag || tag.kind !== 'field') {
+    return createDatosField(overrides)
+  }
+  return createDatosField({
+    tagId: tag.id,
+    label: tag.label,
+    mode: 'campo',
+    value: tag.path,
+    format: tag.format,
+    ...overrides,
+  })
+}
+
 function clienteFields(): string {
   return stringifyDatosFields([
-    createDatosField({ label: 'Nombre', mode: 'campo', value: 'cliente.nombre' }),
-    createDatosField({ label: 'NIT', mode: 'campo', value: 'cliente.nit' }),
-    createDatosField({ label: 'Ciudad', mode: 'campo', value: 'cliente.ciudad' }),
+    fieldFromTag('cliente-nombre'),
+    fieldFromTag('cliente-nit'),
+    fieldFromTag('cliente-ciudad'),
   ])
 }
 
 function emisorFields(): string {
   return stringifyDatosFields([
-    createDatosField({
-      label: 'Razón social',
-      mode: 'campo',
-      value: 'emisor.razonSocial',
-    }),
-    createDatosField({ label: 'NIT', mode: 'campo', value: 'emisor.nit' }),
+    fieldFromTag('emisor-razon'),
+    fieldFromTag('emisor-nit'),
+    fieldFromTag('emisor-responsabilidad'),
   ])
 }
 
 function headerFields(): string {
   return stringifyDatosFields([
-    createDatosField({
-      label: 'Documento',
-      mode: 'texto',
-      value: 'Factura de venta',
-      valueStyle: {
-        ...defaultValueStyle(),
-        fontSizePx: 24,
-        bold: true,
-      },
+    fieldFromTag('doc-tipo', {
+      valueStyle: { ...defaultValueStyle(), fontSizePx: 22, bold: true },
     }),
-    createDatosField({ label: 'Número', mode: 'campo', value: 'numero' }),
+    fieldFromTag('doc-numero'),
+    fieldFromTag('doc-prefijo'),
+    fieldFromTag('cufe'),
+  ])
+}
+
+function autorizacionFields(): string {
+  return stringifyDatosFields([
+    fieldFromTag('doc-autorizacion'),
+    fieldFromTag('doc-rango-desde'),
+    fieldFromTag('doc-rango-hasta'),
+    fieldFromTag('doc-vigencia-inicio'),
+    fieldFromTag('doc-vigencia-fin'),
+    fieldFromTag('doc-fecha-generacion'),
+    fieldFromTag('doc-hora-generacion'),
+  ])
+}
+
+function pagoFields(): string {
+  return stringifyDatosFields([
+    fieldFromTag('pago-forma'),
+    fieldFromTag('pago-medio'),
+    fieldFromTag('pago-plazo'),
   ])
 }
 
 function totalesFields(): string {
   return stringifyDatosFields([
-    createDatosField({
-      label: 'Subtotal',
-      mode: 'campo',
-      value: 'totales.subtotal',
-      format: 'moneda',
-    }),
-    createDatosField({
-      label: 'IVA',
-      mode: 'campo',
-      value: 'totales.iva',
-      format: 'moneda',
-    }),
-    createDatosField({
-      label: 'Total',
-      mode: 'campo',
-      value: 'totales.total',
-      format: 'moneda',
+    fieldFromTag('totales-subtotal'),
+    fieldFromTag('totales-iva'),
+    fieldFromTag('totales-iva-tarifa'),
+    fieldFromTag('totales-consumo'),
+    fieldFromTag('totales-consumo-tarifa'),
+    fieldFromTag('totales-total', {
       valueStyle: { ...defaultValueStyle(), fontSizePx: 18, bold: true },
     }),
   ])
 }
 
+function softwareFields(): string {
+  return stringifyDatosFields([
+    fieldFromTag('software-fabricante'),
+    fieldFromTag('software-fabricante-nit'),
+    fieldFromTag('software-nombre'),
+    fieldFromTag('software-proveedor'),
+  ])
+}
+
 function defaultTableColumns(): string {
   return stringifyTableColumns([
+    createTableColumn({ title: 'Código', property: 'codigo' }),
     createTableColumn({ title: 'Descripción', property: 'descripcion' }),
     createTableColumn({ title: 'Cant.', property: 'cantidad' }),
+    createTableColumn({ title: 'Valor unit.', property: 'valorUnitario' }),
     createTableColumn({ title: 'Valor', property: 'valor' }),
   ])
 }
@@ -249,6 +286,19 @@ export const BLOCK_CATALOG: {
       columna: 1,
     },
   },
+  {
+    type: 'imagen',
+    label: 'Imagen',
+    description: 'Imagen o código QR desde el JSON',
+    defaults: {
+      srcPath: 'documento.qrUrl',
+      width: 120,
+      height: 120,
+      align: 'izquierda',
+      tagId: '',
+      columna: 1,
+    },
+  },
 ]
 
 export function createBlock(type: BlockType): TemplateBlock {
@@ -270,7 +320,17 @@ export function createDefaultFacturaBlocks(): TemplateBlock[] {
     title: 'Factura',
     fieldsJson: headerFields(),
     columna: 1,
-    labelWidth: 120,
+    labelWidth: 140,
+    labelValueGap: 8,
+    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  }
+
+  const autorizacion = createBlock('datos')
+  autorizacion.props = {
+    title: 'Autorización DIAN',
+    fieldsJson: autorizacionFields(),
+    columna: 1,
+    labelWidth: 160,
     labelValueGap: 8,
     titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
   }
@@ -280,7 +340,7 @@ export function createDefaultFacturaBlocks(): TemplateBlock[] {
     title: 'Emisor',
     fieldsJson: emisorFields(),
     columna: 1,
-    labelWidth: 120,
+    labelWidth: 140,
     labelValueGap: 8,
     titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
   }
@@ -290,7 +350,7 @@ export function createDefaultFacturaBlocks(): TemplateBlock[] {
     title: 'Cliente',
     fieldsJson: clienteFields(),
     columna: 2,
-    labelWidth: 120,
+    labelWidth: 140,
     labelValueGap: 8,
     titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
   }
@@ -310,12 +370,42 @@ export function createDefaultFacturaBlocks(): TemplateBlock[] {
   const tabla = createBlock('tabla')
   const totales = createBlock('datos')
   totales.props = {
-    title: 'Totales',
+    title: 'Totales e impuestos',
     fieldsJson: totalesFields(),
     columna: 1,
-    labelWidth: 120,
+    labelWidth: 160,
     labelValueGap: 8,
     titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  }
+
+  const pago = createBlock('datos')
+  pago.props = {
+    title: 'Pago',
+    fieldsJson: pagoFields(),
+    columna: 1,
+    labelWidth: 140,
+    labelValueGap: 8,
+    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  }
+
+  const software = createBlock('datos')
+  software.props = {
+    title: 'Software',
+    fieldsJson: softwareFields(),
+    columna: 1,
+    labelWidth: 180,
+    labelValueGap: 8,
+    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  }
+
+  const qr = createBlock('imagen')
+  qr.props = {
+    srcPath: 'documento.qrUrl',
+    width: 120,
+    height: 120,
+    align: 'izquierda',
+    tagId: 'qr',
+    columna: 1,
   }
 
   const nota = createBlock('texto')
@@ -327,7 +417,18 @@ export function createDefaultFacturaBlocks(): TemplateBlock[] {
 
   const espacio = createBlock('espacio')
 
-  return [header, top, espacio, tabla, totales, nota]
+  return [
+    header,
+    autorizacion,
+    top,
+    espacio,
+    tabla,
+    totales,
+    pago,
+    software,
+    qr,
+    nota,
+  ]
 }
 
 export function clampColumn(column: number, maxColumns: number): number {

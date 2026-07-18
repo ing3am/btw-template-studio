@@ -37,6 +37,9 @@ Esos casos se resuelven con **Contenedor + Datos + Tabla**.
 **Configuración de Página** (tamaño, orientación, márgenes, fondo) **no es bloque**:  
 vive arriba en el **panel Documento**. Contrato: **`front/REQUERIMIENTO-PAGINA.md`**.
 
+**Etiquetas DIAN** (catálogo arrastrable + búsqueda + checklist):  
+**`front/REQUERIMIENTO-ETIQUETAS-DIAN.md`**. Añade bloque **Imagen** a la paleta.
+
 ---
 
 ## 3. Contenedor
