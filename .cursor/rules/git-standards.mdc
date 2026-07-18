@@ -1,0 +1,68 @@
+---
+description: Git standards for branches, commits, and PR events (English, Conventional Commits)
+alwaysApply: true
+---
+
+# Git standards (mandatory)
+
+All branch names, commit messages, PR titles, and CI/workflow event names must be in **English**.
+UI copy for the product stays Spanish (es-CO); Git metadata is English only.
+
+## Branches
+
+Format: `<type>/<short-kebab-description>`
+
+Allowed `type` values:
+- `feature` — new capability
+- `fix` — bug fix
+- `chore` — tooling, config, deps
+- `docs` — documentation only
+- `refactor` — no behavior change
+- `hotfix` — urgent production fix
+- `ci` — pipelines / Actions
+
+Rules:
+- Lowercase kebab-case only (`a-z`, `0-9`, `-`)
+- No spaces, accents, or Spanish words
+- Keep short and specific
+
+```text
+✅ feature/mandatory-labels
+✅ fix/preview-debounce
+❌ feature/etiquetas-obligatorias
+❌ EtiquetasObligatorias
+```
+
+## Commits (Conventional Commits)
+
+Format: `<type>(optional-scope): <imperative summary>`
+
+Allowed `type` values: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
+
+Rules:
+- Subject in English, imperative mood (“add”, not “added” / “adds”)
+- No trailing period
+- Aim for ≤72 characters on the subject line
+- Body (optional) explains **why**, wrapped at ~72 chars
+- One logical change per commit when practical
+- Never commit secrets (`.env`, keys, passwords)
+
+```text
+✅ feat(builder): add mandatory label fields to Datos block
+✅ chore: add git standards cursor rule
+❌ feat: agregué etiquetas obligatorias
+❌ Updated stuff.
+```
+
+## Pull requests & events
+
+- PR title: same Conventional Commits style as the subject
+- PR description in English (Summary + Test plan)
+- GitHub Actions workflow `name:` and job ids in English
+- Do not force-push `main`
+- Prefer merge via PR; delete the branch after merge
+
+## Agent behavior
+
+When creating branches, commits, or PR text in this repo, follow this rule automatically.
+If a proposed name/message is not in English or not conventional, rewrite it before applying.
