@@ -527,6 +527,7 @@ export const BLOCK_CATALOG: {
       height: 120,
       align: 'izquierda',
       tagId: '',
+      asQr: false,
       columna: 1,
     },
   },
@@ -723,6 +724,7 @@ export function createDefaultFacturaBlocks(): TemplateBlock[] {
   qr.props = {
     srcPath: 'documento.qrUrl',
     tagId: 'qr',
+    asQr: true,
     width: 80,
     height: 80,
     align: 'centro',

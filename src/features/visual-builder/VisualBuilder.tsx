@@ -238,7 +238,7 @@ function summarize(block: TemplateBlock): string {
     case 'espacio':
       return `${block.props.size}px`
     case 'imagen':
-      return `${block.props.srcPath || 'Sin imagen'} · ${block.props.width}×${block.props.height}`
+      return `${Boolean(block.props.asQr) || block.props.tagId === 'qr' ? 'QR · ' : ''}${block.props.srcPath || 'Sin imagen'} · ${block.props.width}×${block.props.height}`
     case 'salto':
       return `Nueva página · ${
         block.props.orientation === 'vertical' ? 'vertical' : 'horizontal'
@@ -747,7 +747,7 @@ function PropsPanel({
         ) : null}
         <BoxStyleFields props={selected.props} onChange={onChangeProps} />
         <label className={styles.field}>
-          <span>Campo JSON (URL de imagen)</span>
+          <span>Campo JSON (URL DIAN o imagen)</span>
           <input
             type="text"
             value={String(selected.props.srcPath ?? '')}
@@ -755,6 +755,19 @@ function PropsPanel({
               onChangeProps({ ...selected.props, srcPath: event.target.value })
             }
           />
+        </label>
+        <label className={styles.check}>
+          <input
+            type="checkbox"
+            checked={
+              Boolean(selected.props.asQr) ||
+              String(selected.props.tagId || '') === 'qr'
+            }
+            onChange={(event) =>
+              onChangeProps({ ...selected.props, asQr: event.target.checked })
+            }
+          />
+          <span>Generar código QR (la URL del JSON se codifica en el QR)</span>
         </label>
         <label className={styles.field}>
           <span>Ancho (px)</span>
@@ -1032,6 +1045,7 @@ export function VisualBuilder({
         ...image.props,
         srcPath: label.path,
         tagId: label.id,
+        asQr: label.id === 'qr',
         width: 120,
         height: 120,
         cellAlign: 'centro',

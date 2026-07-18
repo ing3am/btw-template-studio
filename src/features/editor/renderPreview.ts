@@ -27,6 +27,12 @@ function formatValue(value: Json, filter?: string): string {
       return new Intl.DateTimeFormat('es-CO').format(date)
     }
   }
+  /** Payload URL (UBL/DIAN) → PNG del código QR para <img src>. */
+  if (filter === 'qr') {
+    const payload = String(value).trim()
+    if (!payload) return ''
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=8&data=${encodeURIComponent(payload)}`
+  }
   if (typeof value === 'number') {
     return new Intl.NumberFormat('es-CO').format(value)
   }
