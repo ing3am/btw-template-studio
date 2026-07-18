@@ -96,4 +96,6 @@ jobs:
               exit 1
             fi
             chmod +x "$SCRIPT"
-            DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}" bash "$SCRIPT"
+            export DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}"
+            export SUDO_PASSWORD="${{ secrets.DEPLOY_PASSWORD }}"
+            bash "$SCRIPT"
