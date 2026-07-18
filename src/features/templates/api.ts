@@ -155,10 +155,34 @@ async function saveDraftMock(id: string, input: SaveDraftInput): Promise<Templat
 
   const bundle = bundles[index]
   const current = latestVersion(bundle)
+  const createdAt = new Date().toISOString()
+
+  // After publish, next save opens a new draft version (v+1).
+  if (current.isPublished || bundle.template.status === 'published') {
+    const draftVersion: TemplateVersion = {
+      id: crypto.randomUUID(),
+      templateId: id,
+      versionNumber: current.versionNumber + 1,
+      ...input,
+      createdAt,
+      isPublished: false,
+    }
+    bundles[index] = {
+      template: {
+        ...bundle.template,
+        status: 'draft',
+        updatedAt: createdAt,
+      },
+      versions: [draftVersion, ...bundle.versions],
+    }
+    writeStore(bundles)
+    return draftVersion
+  }
+
   const updatedVersion: TemplateVersion = {
     ...current,
     ...input,
-    createdAt: new Date().toISOString(),
+    createdAt,
     isPublished: false,
   }
 
