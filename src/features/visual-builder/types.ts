@@ -566,11 +566,14 @@ export function createBlock(type: BlockType): TemplateBlock {
   return block
 }
 
-export function createDefaultFacturaBlocks(): TemplateBlock[] {
+export function createDefaultFacturaBlocks(options?: {
+  sectorSalud?: boolean
+}): TemplateBlock[] {
   // Replica estructural de FacturaFormatoSeisAmazonas (orden document.Add):
   // Header {20,30,20} → Body {2,2,1.5,2} → Body2 {2,2,3.5} → CUFE → ítems →
-  // UnitTotal → Footer {4,2} → valor letras → pie FE (+ anexo salud demo)
+  // UnitTotal → Footer {4,2} → valor letras → pie FE (+ anexo salud opcional)
 
+  const sectorSalud = options?.sectorSalud ?? false
   const small9 = { ...defaultValueStyle(), fontSizePx: 9, bold: false }
   const small8 = { ...defaultValueStyle(), fontSizePx: 8, bold: false }
   const title10 = {
@@ -1054,7 +1057,7 @@ export function createDefaultFacturaBlocks(): TemplateBlock[] {
     return e
   }
 
-  return [
+  const base: TemplateBlock[] = [
     header,
     gap(8),
     body,
@@ -1068,6 +1071,12 @@ export function createDefaultFacturaBlocks(): TemplateBlock[] {
     gap(4),
     valorLetras,
     pie,
+  ]
+
+  if (!sectorSalud) return base
+
+  return [
+    ...base,
     saltoAnexo,
     anexoTitulo,
     gap(4),
