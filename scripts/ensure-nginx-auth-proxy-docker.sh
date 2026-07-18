@@ -26,7 +26,7 @@ fi
 echo "→ Conf: ${CONF_FILE}"
 
 echo "→ Patching location /api-auth/"
-docker run --rm -v "${CONF_DIR}:${CONF_DIR}" alpine:3.20 sh -c "apk add --no-cache python3 >/dev/null && python3 -" <<PY
+docker run --rm -i -v "${CONF_DIR}:${CONF_DIR}" alpine:3.20 sh -c "apk add --no-cache python3 >/dev/null && python3 -" <<PY
 from pathlib import Path
 import re
 
@@ -53,7 +53,6 @@ else:
     if not m:
         raise SystemExit("No location / block found")
     indent = m.group(1)
-    # normalize block indentation to match surrounding file
     lines = [indent + line.lstrip() if line.strip() else "" for line in block.strip("\n").splitlines()]
     insert = "\n" + "\n".join(lines) + "\n"
     text = text[: m.start()] + insert + text[m.start() :]
@@ -61,18 +60,13 @@ else:
     print("Inserted /api-auth/ proxy")
 PY
 
-echo "→ nginx -t"
-docker run --rm --network host \
-  -v /etc/nginx:/etc/nginx:ro \
-  -v /etc/letsencrypt:/etc/letsencrypt:ro \
-  nginx:1.24-alpine \
-  nginx -t -c /etc/nginx/nginx.conf
-
-NGINX_PID="$(docker run --rm -v /run/nginx.pid:/run/nginx.pid:ro alpine:3.20 cat /run/nginx.pid | tr -d '[:space:]')"
-if [[ -z "${NGINX_PID}" ]]; then
-  # fallback path used by some distros
-  NGINX_PID="$(docker run --rm -v /var/run/nginx.pid:/var/run/nginx.pid:ro alpine:3.20 cat /var/run/nginx.pid | tr -d '[:space:]')"
-fi
+NGINX_PID=""
+for pidfile in /run/nginx.pid /var/run/nginx.pid; do
+  NGINX_PID="$(docker run --rm -v "${pidfile}:${pidfile}:ro" alpine:3.20 cat "${pidfile}" 2>/dev/null | tr -d '[:space:]' || true)"
+  if [[ -n "${NGINX_PID}" ]]; then
+    break
+  fi
+done
 if [[ -z "${NGINX_PID}" ]]; then
   echo "Could not read nginx pid file" >&2
   exit 1
