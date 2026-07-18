@@ -18,6 +18,7 @@ import {
   useTemplateBundle,
 } from '@/features/templates/hooks'
 import { VisualBuilder } from '@/features/visual-builder/VisualBuilder'
+import { missingRequiredLabels } from '@/features/visual-builder/dianPresence'
 import {
   createDefaultFacturaBlocks,
   type TemplateBlock,
@@ -128,12 +129,21 @@ export function TemplateEditorPage() {
 
   const dirty = Boolean(baseline) && currentPayload !== baseline
   const blocker = useBlocker(dirty)
+  const missingDian = useMemo(() => missingRequiredLabels(blocks), [blocks])
+  const canPersist = missingDian.length === 0
 
   const debouncedHtml = useDebouncedValue(html)
   const debouncedCss = useDebouncedValue(css)
   const debouncedSample = useDebouncedValue(sampleDataJson)
 
   const handleSave = useCallback(async () => {
+    if (missingRequiredLabels(blocks).length > 0) {
+      toast.push(
+        'Completa las etiquetas DIAN obligatorias antes de guardar',
+        'error',
+      )
+      return
+    }
     try {
       setStatusText('Guardando…')
       const version = await saveDraft.mutateAsync({
@@ -162,6 +172,13 @@ export function TemplateEditorPage() {
   ])
 
   const handlePublish = useCallback(async () => {
+    if (missingRequiredLabels(blocks).length > 0) {
+      toast.push(
+        'Completa las etiquetas DIAN obligatorias antes de publicar',
+        'error',
+      )
+      return
+    }
     try {
       if (dirty) {
         await handleSave()
@@ -174,7 +191,7 @@ export function TemplateEditorPage() {
       setStatusText('Error al publicar')
       toast.push('No pudimos publicar la plantilla', 'error')
     }
-  }, [dirty, handleSave, publish, toast])
+  }, [blocks, dirty, handleSave, publish, toast])
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -265,7 +282,12 @@ export function TemplateEditorPage() {
             variant="secondary"
             icon={<Save size={16} />}
             hint="⌘/Ctrl+S"
-            disabled={saveDraft.isPending}
+            disabled={saveDraft.isPending || !canPersist}
+            title={
+              canPersist
+                ? undefined
+                : `Faltan ${missingDian.length} etiquetas DIAN obligatorias`
+            }
             onClick={() => void handleSave()}
           >
             Guardar
@@ -273,7 +295,12 @@ export function TemplateEditorPage() {
           <Button
             type="button"
             icon={<UploadCloud size={16} />}
-            disabled={publish.isPending}
+            disabled={publish.isPending || !canPersist}
+            title={
+              canPersist
+                ? undefined
+                : `Faltan ${missingDian.length} etiquetas DIAN obligatorias`
+            }
             onClick={() => void handlePublish()}
           >
             Publicar
