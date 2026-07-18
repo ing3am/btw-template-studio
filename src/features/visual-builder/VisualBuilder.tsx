@@ -2,12 +2,12 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
-  closestCenter,
   useDraggable,
   useDroppable,
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragOverEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
 import {
@@ -27,6 +27,7 @@ import {
   Space,
   Rows3,
   Image as ImageIcon,
+  QrCode,
   X,
   Tag,
   BetweenHorizontalStart,
@@ -46,6 +47,12 @@ import {
   type TemplateBlock,
 } from './types'
 import { resolveBoxStyle } from './boxStyle'
+import {
+  builderCollisionDetection,
+  normalizeContainerOverId,
+  resolveDropHint,
+  type DropHint,
+} from './dropTarget'
 import {
   normalizeCellAlign,
   normalizeCellVAlign,
@@ -71,6 +78,13 @@ import {
   createFieldFromDianLabel,
   isEtiquetaDatosBlock,
 } from './dianPresence'
+import {
+  createTemplateAssetFromFile,
+  deleteTemplateAsset,
+  listTemplateAssets,
+  type TemplateAsset,
+} from '@/features/templates/templateAssets'
+import { extractJsonPaths } from './extractJsonPaths'
 import styles from './VisualBuilder.module.css'
 
 const ICONS: Record<BlockType, typeof Box> = {
@@ -80,6 +94,7 @@ const ICONS: Record<BlockType, typeof Box> = {
   texto: Type,
   espacio: Space,
   imagen: ImageIcon,
+  qr: QrCode,
   salto: BetweenHorizontalStart,
 }
 
@@ -87,6 +102,9 @@ type VisualBuilderProps = {
   blocks: TemplateBlock[]
   sampleDataJson: string
   page: PageSettings
+  templateId: string
+  assets: TemplateAsset[]
+  onAssetsChange: (assets: TemplateAsset[]) => void
   onChange: (blocks: TemplateBlock[]) => void
   onPageChange: (page: PageSettings) => void
 }
@@ -142,12 +160,14 @@ function SortableRow({
   block,
   selected,
   nested,
+  dropHint,
   onSelect,
   onRemove,
 }: {
   block: TemplateBlock
   selected: boolean
   nested?: boolean
+  dropHint: DropHint | null
   onSelect: () => void
   onRemove: () => void
 }) {
@@ -155,6 +175,13 @@ function SortableRow({
     useSortable({ id: block.id })
   const Icon = ICONS[block.type]
   const catalog = BLOCK_CATALOG.find((item) => item.type === block.type)
+  const isDropTarget = dropHint?.overId === block.id
+  const dropClass =
+    isDropTarget && dropHint
+      ? dropHint.kind === 'field'
+        ? styles.dropTargetField
+        : styles.dropTargetSibling
+      : ''
 
   return (
     <div
@@ -168,6 +195,7 @@ function SortableRow({
         styles.block,
         selected ? styles.blockSelected : '',
         nested ? styles.blockNested : '',
+        dropClass,
       ]
         .filter(Boolean)
         .join(' ')}
@@ -176,6 +204,11 @@ function SortableRow({
         onSelect()
       }}
     >
+      {isDropTarget && dropHint ? (
+        <span className={styles.dropBadge} data-kind={dropHint.kind}>
+          {dropHint.kind === 'field' ? 'Campo' : 'Insertar'}
+        </span>
+      ) : null}
       <button
         type="button"
         className={styles.grip}
@@ -237,8 +270,22 @@ function summarize(block: TemplateBlock): string {
       return String(block.props.content)
     case 'espacio':
       return `${block.props.size}px`
-    case 'imagen':
-      return `${Boolean(block.props.asQr) || block.props.tagId === 'qr' ? 'QR · ' : ''}${block.props.srcPath || 'Sin imagen'} · ${block.props.width}×${block.props.height}`
+    case 'imagen': {
+      const mode = String(block.props.sourceMode || 'upload')
+      const asset = String(block.props.assetId || '')
+      const path = String(block.props.srcPath || '')
+      const src =
+        mode === 'campo' ? path || 'Sin campo' : asset ? 'Imagen subida' : 'Sin imagen'
+      return `${src} · ${block.props.width}×${block.props.height}`
+    }
+    case 'qr': {
+      const mode = String(block.props.sourceMode || 'dian')
+      const detail =
+        mode === 'url'
+          ? 'URL fija'
+          : String(block.props.srcPath || 'documento.qrUrl')
+      return `QR · ${detail} · ${block.props.width}×${block.props.height}`
+    }
     case 'salto':
       return `Nueva página · ${
         block.props.orientation === 'vertical' ? 'vertical' : 'horizontal'
@@ -295,7 +342,7 @@ function CellAlignField({
 }) {
   return (
     <label className={styles.field}>
-      <span>Alineación horizontal</span>
+      <span>Horizontal</span>
       <select
         value={normalizeCellAlign(value)}
         onChange={(event) => onChange(normalizeCellAlign(event.target.value))}
@@ -317,7 +364,7 @@ function CellVAlignField({
 }) {
   return (
     <label className={styles.field}>
-      <span>Alineación vertical</span>
+      <span>Vertical</span>
       <select
         value={normalizeCellVAlign(value)}
         onChange={(event) => onChange(normalizeCellVAlign(event.target.value))}
@@ -327,6 +374,27 @@ function CellVAlignField({
         <option value="abajo">Abajo</option>
       </select>
     </label>
+  )
+}
+
+function CellAlignRow({
+  props,
+  onChange,
+}: {
+  props: TemplateBlock['props']
+  onChange: (props: TemplateBlock['props']) => void
+}) {
+  return (
+    <div className={styles.layoutRow}>
+      <CellAlignField
+        value={String(props.cellAlign || 'izquierda')}
+        onChange={(cellAlign) => onChange({ ...props, cellAlign })}
+      />
+      <CellVAlignField
+        value={String(props.cellVAlign || 'arriba')}
+        onChange={(cellVAlign) => onChange({ ...props, cellVAlign })}
+      />
+    </div>
   )
 }
 
@@ -504,13 +572,20 @@ function PaletteItem({ type }: { type: BlockType }) {
   )
 }
 
-function RootDrop({ children }: { children: ReactNode }) {
-  const { setNodeRef, isOver } = useDroppable({ id: 'root-drop' })
+function RootDrop({
+  active,
+  children,
+}: {
+  active: boolean
+  children: ReactNode
+}) {
+  const { setNodeRef } = useDroppable({ id: 'root-drop' })
   return (
     <div
       ref={setNodeRef}
-      className={styles.canvasList}
-      style={isOver ? { outline: '2px dashed var(--color-accent)' } : undefined}
+      className={[styles.canvasList, active ? styles.dropTargetRoot : '']
+        .filter(Boolean)
+        .join(' ')}
     >
       {children}
     </div>
@@ -519,22 +594,29 @@ function RootDrop({ children }: { children: ReactNode }) {
 
 function ContainerDrop({
   id,
+  active,
   children,
 }: {
   id: string
+  active: boolean
   children: ReactNode
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `container:${id}` })
+  const { setNodeRef } = useDroppable({ id: `container:${id}` })
   return (
     <div
       ref={setNodeRef}
-      className={styles.containerChildren}
-      style={
-        isOver
-          ? { outline: '2px dashed var(--color-accent)', outlineOffset: 2 }
-          : undefined
-      }
+      className={[
+        styles.containerChildren,
+        active ? styles.dropTargetContainer : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
     >
+      {active ? (
+        <span className={styles.dropBadge} data-kind="container">
+          Celda
+        </span>
+      ) : null}
       {children}
     </div>
   )
@@ -544,11 +626,17 @@ function PropsPanel({
   selected,
   insideContainer,
   sampleDataJson,
+  templateId,
+  assets,
+  onAssetsChange,
   onChangeProps,
 }: {
   selected: TemplateBlock
   insideContainer: boolean
   sampleDataJson: string
+  templateId: string
+  assets: TemplateAsset[]
+  onAssetsChange: (assets: TemplateAsset[]) => void
   onChangeProps: (props: TemplateBlock['props']) => void
 }) {
   if (selected.type === 'contenedor') {
@@ -659,31 +747,10 @@ function PropsPanel({
   }
 
   if (selected.type === 'datos') {
-    const fromEtiqueta = isEtiquetaDatosBlock(selected)
     return (
       <div className={styles.props}>
-        {fromEtiqueta ? (
-          <p className={styles.hint}>
-            Origen: etiqueta DIAN. Conserva diseño de Datos (caja, alineación,
-            campos). El valor viene del JSON (`tagId` / path), no de texto
-            quemado.
-          </p>
-        ) : null}
         {insideContainer ? (
-          <>
-            <CellAlignField
-              value={String(selected.props.cellAlign || 'izquierda')}
-              onChange={(cellAlign) =>
-                onChangeProps({ ...selected.props, cellAlign })
-              }
-            />
-            <CellVAlignField
-              value={String(selected.props.cellVAlign || 'arriba')}
-              onChange={(cellVAlign) =>
-                onChangeProps({ ...selected.props, cellVAlign })
-              }
-            />
-          </>
+          <CellAlignRow props={selected.props} onChange={onChangeProps} />
         ) : null}
         <BoxStyleFields props={selected.props} onChange={onChangeProps} />
         <DatosFieldsEditor
@@ -700,20 +767,7 @@ function PropsPanel({
       <div className={styles.props}>
         <h3>Tabla</h3>
         {insideContainer ? (
-          <>
-            <CellAlignField
-              value={String(selected.props.cellAlign || 'izquierda')}
-              onChange={(cellAlign) =>
-                onChangeProps({ ...selected.props, cellAlign })
-              }
-            />
-            <CellVAlignField
-              value={String(selected.props.cellVAlign || 'arriba')}
-              onChange={(cellVAlign) =>
-                onChangeProps({ ...selected.props, cellVAlign })
-              }
-            />
-          </>
+          <CellAlignRow props={selected.props} onChange={onChangeProps} />
         ) : null}
         <BoxStyleFields props={selected.props} onChange={onChangeProps} />
         <TableColumnsEditor
@@ -726,81 +780,261 @@ function PropsPanel({
   }
 
   if (selected.type === 'imagen') {
+    const sourceMode =
+      String(selected.props.sourceMode || 'upload') === 'campo'
+        ? 'campo'
+        : 'upload'
+    const assetId = String(selected.props.assetId || '')
+    const currentAsset = assets.find((item) => item.id === assetId)
+    const paths = extractJsonPaths(sampleDataJson)
+
+    async function onUpload(file: File | null) {
+      if (!file || !templateId) return
+      try {
+        const asset = await createTemplateAssetFromFile(templateId, file)
+        onAssetsChange(listTemplateAssets(templateId))
+        onChangeProps({
+          ...selected.props,
+          sourceMode: 'upload',
+          assetId: asset.id,
+        })
+      } catch (error) {
+        window.alert(
+          error instanceof Error ? error.message : 'No se pudo subir la imagen.',
+        )
+      }
+    }
+
     return (
       <div className={styles.props}>
         <h3>Imagen</h3>
         {insideContainer ? (
-          <>
-            <CellAlignField
-              value={String(selected.props.cellAlign || 'izquierda')}
-              onChange={(cellAlign) =>
-                onChangeProps({ ...selected.props, cellAlign })
-              }
-            />
-            <CellVAlignField
-              value={String(selected.props.cellVAlign || 'arriba')}
-              onChange={(cellVAlign) =>
-                onChangeProps({ ...selected.props, cellVAlign })
-              }
-            />
-          </>
+          <CellAlignRow props={selected.props} onChange={onChangeProps} />
         ) : null}
-        <BoxStyleFields props={selected.props} onChange={onChangeProps} />
         <label className={styles.field}>
-          <span>Campo JSON (URL DIAN o imagen)</span>
-          <input
-            type="text"
-            value={String(selected.props.srcPath ?? '')}
-            onChange={(event) =>
-              onChangeProps({ ...selected.props, srcPath: event.target.value })
-            }
-          />
-        </label>
-        <label className={styles.check}>
-          <input
-            type="checkbox"
-            checked={
-              Boolean(selected.props.asQr) ||
-              String(selected.props.tagId || '') === 'qr'
-            }
-            onChange={(event) =>
-              onChangeProps({ ...selected.props, asQr: event.target.checked })
-            }
-          />
-          <span>Generar código QR (la URL del JSON se codifica en el QR)</span>
-        </label>
-        <label className={styles.field}>
-          <span>Ancho (px)</span>
-          <input
-            type="number"
-            min={24}
-            value={Number(selected.props.width) || 120}
+          <span>Origen</span>
+          <select
+            value={sourceMode}
             onChange={(event) =>
               onChangeProps({
                 ...selected.props,
-                width: Number(event.target.value) || 120,
+                sourceMode: event.target.value,
               })
             }
-          />
+          >
+            <option value="upload">Imagen subida</option>
+            <option value="campo">Campo del JSON</option>
+          </select>
         </label>
-        <label className={styles.field}>
-          <span>Alto (px)</span>
-          <input
-            type="number"
-            min={24}
-            value={Number(selected.props.height) || 120}
-            onChange={(event) =>
-              onChangeProps({
-                ...selected.props,
-                height: Number(event.target.value) || 120,
-              })
-            }
-          />
-        </label>
+        {sourceMode === 'upload' ? (
+          <>
+            <label className={styles.field}>
+              <span>Subir imagen</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => {
+                  void onUpload(event.target.files?.[0] ?? null)
+                  event.target.value = ''
+                }}
+              />
+            </label>
+            {currentAsset ? (
+              <div className={styles.assetPreview}>
+                <img src={currentAsset.dataUrl} alt={currentAsset.name} />
+                <div className={styles.assetMeta}>
+                  <strong>{currentAsset.name}</strong>
+                  <button
+                    type="button"
+                    className={styles.linkBtn}
+                    onClick={() => {
+                      deleteTemplateAsset(templateId, currentAsset.id)
+                      onAssetsChange(listTemplateAssets(templateId))
+                      onChangeProps({ ...selected.props, assetId: '' })
+                    }}
+                  >
+                    Quitar imagen
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className={styles.hint}>Aún no hay imagen en este bloque.</p>
+            )}
+          </>
+        ) : (
+          <label className={styles.field}>
+            <span>Campo JSON (URL de imagen)</span>
+            <select
+              value={String(selected.props.srcPath || '')}
+              onChange={(event) =>
+                onChangeProps({
+                  ...selected.props,
+                  srcPath: event.target.value,
+                })
+              }
+            >
+              <option value="">Selecciona un campo</option>
+              {paths.map((path) => (
+                <option key={path} value={path}>
+                  {path}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <div className={styles.layoutRow}>
+          <label className={styles.field}>
+            <span>Ancho (px)</span>
+            <input
+              type="number"
+              min={24}
+              value={Number(selected.props.width) || 120}
+              onChange={(event) =>
+                onChangeProps({
+                  ...selected.props,
+                  width: Number(event.target.value) || 120,
+                })
+              }
+            />
+          </label>
+          <label className={styles.field}>
+            <span>Alto (px)</span>
+            <input
+              type="number"
+              min={24}
+              value={Number(selected.props.height) || 120}
+              onChange={(event) =>
+                onChangeProps({
+                  ...selected.props,
+                  height: Number(event.target.value) || 120,
+                })
+              }
+            />
+          </label>
+        </div>
         <label className={styles.field}>
           <span>Alineación</span>
           <select
-            value={String(selected.props.align || 'izquierda')}
+            value={String(selected.props.align || 'centro')}
+            onChange={(event) =>
+              onChangeProps({ ...selected.props, align: event.target.value })
+            }
+          >
+            <option value="izquierda">Izquierda</option>
+            <option value="centro">Centro</option>
+            <option value="derecha">Derecha</option>
+          </select>
+        </label>
+      </div>
+    )
+  }
+
+  if (selected.type === 'qr') {
+    const sourceMode = String(selected.props.sourceMode || 'dian')
+    const paths = extractJsonPaths(sampleDataJson)
+    return (
+      <div className={styles.props}>
+        <h3>Código QR</h3>
+        {insideContainer ? (
+          <CellAlignRow props={selected.props} onChange={onChangeProps} />
+        ) : null}
+        <label className={styles.field}>
+          <span>Origen del contenido</span>
+          <select
+            value={
+              sourceMode === 'url' || sourceMode === 'campo' ? sourceMode : 'dian'
+            }
+            onChange={(event) => {
+              const next = event.target.value
+              onChangeProps({
+                ...selected.props,
+                sourceMode: next,
+                srcPath:
+                  next === 'dian'
+                    ? 'documento.qrUrl'
+                    : String(selected.props.srcPath || 'documento.qrUrl'),
+                tagId: next === 'dian' ? 'qr' : selected.props.tagId || '',
+              })
+            }}
+          >
+            <option value="dian">URL DIAN del UBL (recomendado)</option>
+            <option value="campo">Otro campo del JSON</option>
+            <option value="url">URL fija</option>
+          </select>
+        </label>
+        {sourceMode === 'url' ? (
+          <label className={styles.field}>
+            <span>URL a codificar en el QR</span>
+            <input
+              type="url"
+              value={String(selected.props.staticUrl || '')}
+              placeholder="https://catalogo-vpfe.dian.gov.co/..."
+              onChange={(event) =>
+                onChangeProps({
+                  ...selected.props,
+                  staticUrl: event.target.value,
+                })
+              }
+            />
+          </label>
+        ) : (
+          <label className={styles.field}>
+            <span>Campo JSON</span>
+            <select
+              value={String(selected.props.srcPath || 'documento.qrUrl')}
+              onChange={(event) =>
+                onChangeProps({
+                  ...selected.props,
+                  srcPath: event.target.value,
+                })
+              }
+              disabled={sourceMode === 'dian'}
+            >
+              <option value="documento.qrUrl">documento.qrUrl</option>
+              {paths
+                .filter((path) => path !== 'documento.qrUrl')
+                .map((path) => (
+                  <option key={path} value={path}>
+                    {path}
+                  </option>
+                ))}
+            </select>
+          </label>
+        )}
+        <div className={styles.layoutRow}>
+          <label className={styles.field}>
+            <span>Ancho (px)</span>
+            <input
+              type="number"
+              min={24}
+              value={Number(selected.props.width) || 80}
+              onChange={(event) =>
+                onChangeProps({
+                  ...selected.props,
+                  width: Number(event.target.value) || 80,
+                })
+              }
+            />
+          </label>
+          <label className={styles.field}>
+            <span>Alto (px)</span>
+            <input
+              type="number"
+              min={24}
+              value={Number(selected.props.height) || 80}
+              onChange={(event) =>
+                onChangeProps({
+                  ...selected.props,
+                  height: Number(event.target.value) || 80,
+                })
+              }
+            />
+          </label>
+        </div>
+        <label className={styles.field}>
+          <span>Alineación</span>
+          <select
+            value={String(selected.props.align || 'centro')}
             onChange={(event) =>
               onChangeProps({ ...selected.props, align: event.target.value })
             }
@@ -820,8 +1054,7 @@ function PropsPanel({
     return (
       <div className={styles.props}>
         <p className={styles.hint}>
-          Inserta una página nueva. Elige la orientación de esa página (como en el
-          anexo salud del FE, que pasa a horizontal).
+          Inserta una página nueva y elige su orientación.
         </p>
         <span className={styles.fieldLabel}>Orientación de la nueva página</span>
         <div className={styles.orientIcons}>
@@ -862,20 +1095,7 @@ function PropsPanel({
     <div className={styles.props}>
       <h3>{selected.type === 'texto' ? 'Texto' : 'Espacio'}</h3>
       {insideContainer ? (
-        <>
-          <CellAlignField
-            value={String(selected.props.cellAlign || 'izquierda')}
-            onChange={(cellAlign) =>
-              onChangeProps({ ...selected.props, cellAlign })
-            }
-          />
-          <CellVAlignField
-            value={String(selected.props.cellVAlign || 'arriba')}
-            onChange={(cellVAlign) =>
-              onChangeProps({ ...selected.props, cellVAlign })
-            }
-          />
-        </>
+        <CellAlignRow props={selected.props} onChange={onChangeProps} />
       ) : null}
       {selected.type === 'texto' ? (
         <>
@@ -927,12 +1147,16 @@ export function VisualBuilder({
   blocks,
   sampleDataJson,
   page,
+  templateId,
+  assets,
+  onAssetsChange,
   onChange,
   onPageChange,
 }: VisualBuilderProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [activeType, setActiveType] = useState<BlockType | null>(null)
   const [activeLabel, setActiveLabel] = useState<DianLabel | null>(null)
+  const [dropHint, setDropHint] = useState<DropHint | null>(null)
   const [labelQuery, setLabelQuery] = useState('')
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -961,6 +1185,7 @@ export function VisualBuilder({
 
   function handleDragStart(event: DragStartEvent) {
     const id = String(event.active.id)
+    setDropHint(null)
     if (id.startsWith('palette:')) {
       setActiveType(id.replace('palette:', '') as BlockType)
       setActiveLabel(null)
@@ -972,13 +1197,41 @@ export function VisualBuilder({
     }
   }
 
+  function handleDragOver(event: DragOverEvent) {
+    const activeId = String(event.active.id)
+    const overId = event.over ? String(event.over.id) : null
+    const draggingLabel = activeId.startsWith('label:')
+      ? labelFromPaletteId(activeId)
+      : null
+    const draggingType = activeId.startsWith('palette:')
+      ? (activeId.replace('palette:', '') as BlockType)
+      : null
+
+    if (!draggingLabel && !draggingType) {
+      setDropHint(null)
+      return
+    }
+
+    setDropHint(
+      resolveDropHint(overId, {
+        activeLabel: draggingLabel,
+        activeType: draggingType,
+        locate: (id) => findBlock(blocks, id),
+      }),
+    )
+  }
+
   function insertBlockAtOver(
     next: TemplateBlock,
     overId: string,
     type: BlockType,
   ) {
-    if (overId.startsWith('container:')) {
-      const containerId = overId.replace('container:', '')
+    const resolvedOverId = normalizeContainerOverId(overId, type, (id) =>
+      findBlock(blocks, id),
+    )
+
+    if (resolvedOverId.startsWith('container:')) {
+      const containerId = resolvedOverId.replace('container:', '')
       if (!isChildAllowedInContainer(type)) return
       onChange(
         blocks.map((block) => {
@@ -999,13 +1252,13 @@ export function VisualBuilder({
       return
     }
 
-    if (overId === 'root-drop') {
+    if (resolvedOverId === 'root-drop') {
       onChange([...blocks, next])
       setSelectedId(next.id)
       return
     }
 
-    const overRootIndex = blocks.findIndex((block) => block.id === overId)
+    const overRootIndex = blocks.findIndex((block) => block.id === resolvedOverId)
     if (overRootIndex >= 0) {
       const copy = [...blocks]
       copy.splice(overRootIndex + 1, 0, next)
@@ -1014,13 +1267,13 @@ export function VisualBuilder({
       return
     }
 
-    const located = findBlock(blocks, overId)
+    const located = findBlock(blocks, resolvedOverId)
     if (located?.parentId && isChildAllowedInContainer(type)) {
       onChange(
         blocks.map((block) => {
           if (block.id !== located.parentId) return block
           const children = [...(block.children ?? [])]
-          const idx = children.findIndex((child) => child.id === overId)
+          const idx = children.findIndex((child) => child.id === resolvedOverId)
           const insertAt = idx + 1
           children.splice(insertAt, 0, next)
           const prevWidths = parseColumnWidths(
@@ -1039,19 +1292,19 @@ export function VisualBuilder({
   }
 
   function handleLabelDrop(label: DianLabel, overId: string) {
-    if (label.kind === 'image') {
-      const image = createBlock('imagen')
-      image.props = {
-        ...image.props,
-        srcPath: label.path,
-        tagId: label.id,
-        asQr: label.id === 'qr',
-        width: 120,
-        height: 120,
+    if (label.kind === 'image' || label.id === 'qr') {
+      const qr = createBlock('qr')
+      qr.props = {
+        ...qr.props,
+        sourceMode: 'dian',
+        srcPath: label.path || 'documento.qrUrl',
+        tagId: 'qr',
+        width: 80,
+        height: 80,
         cellAlign: 'centro',
         align: 'centro',
       }
-      insertBlockAtOver(image, overId, 'imagen')
+      insertBlockAtOver(qr, overId, 'qr')
       return
     }
 
@@ -1083,6 +1336,7 @@ export function VisualBuilder({
   function handleDragEnd(event: DragEndEvent) {
     setActiveType(null)
     setActiveLabel(null)
+    setDropHint(null)
     const { active, over } = event
     const activeId = String(active.id)
 
@@ -1142,9 +1396,15 @@ export function VisualBuilder({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={builderCollisionDetection}
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
+      onDragCancel={() => {
+        setActiveType(null)
+        setActiveLabel(null)
+        setDropHint(null)
+      }}
     >
       <div className={styles.builder}>
         <aside className={styles.palette}>
@@ -1187,9 +1447,12 @@ export function VisualBuilder({
           {missingLabels.length > 0 ? (
             <div className={styles.missingBanner} role="status">
               <strong>
-                Faltan {missingLabels.length} etiquetas obligatorias DIAN
+                Faltan {missingLabels.length} etiquetas obligatorias en la
+                plantilla
               </strong>
               <span>
+                Puedes borrar o mover bloques; este aviso solo indica qué falta
+                para completar la representación gráfica. ·{' '}
                 {missingLabels.map((item) => item.label).join(' · ')}
               </span>
             </div>
@@ -1198,8 +1461,13 @@ export function VisualBuilder({
             <h3>Bloques</h3>
             <span>{blocks.length} bloques</span>
           </div>
+          {dropHint ? (
+            <div className={styles.dropHintBar} data-kind={dropHint.kind} role="status">
+              {dropHint.message}
+            </div>
+          ) : null}
           <SortableContext items={rootIds} strategy={verticalListSortingStrategy}>
-            <RootDrop>
+            <RootDrop active={dropHint?.kind === 'root'}>
               {blocks.length === 0 ? (
                 <div className={styles.emptyCanvas}>
                   Arrastra bloques para armar tu documento.
@@ -1210,6 +1478,7 @@ export function VisualBuilder({
                     <SortableRow
                       block={block}
                       selected={selectedId === block.id}
+                      dropHint={dropHint}
                       onSelect={() => setSelectedId(block.id)}
                       onRemove={() => {
                         const next = removeFromTree(blocks, block.id)
@@ -1218,7 +1487,13 @@ export function VisualBuilder({
                       }}
                     />
                     {block.type === 'contenedor' ? (
-                      <ContainerDrop id={block.id}>
+                      <ContainerDrop
+                        id={block.id}
+                        active={
+                          dropHint?.kind === 'container' &&
+                          dropHint.overId === `container:${block.id}`
+                        }
+                      >
                         <SortableContext
                           items={(block.children ?? []).map((child) => child.id)}
                           strategy={verticalListSortingStrategy}
@@ -1233,6 +1508,7 @@ export function VisualBuilder({
                                 key={child.id}
                                 block={child}
                                 nested
+                                dropHint={dropHint}
                                 selected={selectedId === child.id}
                                 onSelect={() => setSelectedId(child.id)}
                                 onRemove={() => {
@@ -1335,6 +1611,9 @@ export function VisualBuilder({
                 selected={selectedInfo.block}
                 insideContainer={insideContainer}
                 sampleDataJson={sampleDataJson}
+                templateId={templateId}
+                assets={assets}
+                onAssetsChange={onAssetsChange}
                 onChangeProps={(props) => {
                   onChange(
                     updateTree(blocks, selectedInfo.block.id, (block) => ({

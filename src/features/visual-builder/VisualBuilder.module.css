@@ -210,6 +210,50 @@
   display: grid;
   gap: 0.55rem;
   align-content: start;
+  border-radius: var(--radius-sm);
+  transition:
+    outline-color var(--motion-fast) var(--ease-out),
+    background var(--motion-fast) var(--ease-out);
+}
+
+.dropHintBar {
+  margin: 0 0.75rem 0.35rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+}
+
+.dropHintBar[data-kind='field'] {
+  color: #6b1024;
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+
+.dropHintBar[data-kind='container'] {
+  color: #1c1412;
+  background: #fff4e5;
+  border-color: #e8b86d;
+}
+
+.dropHintBar[data-kind='root'] {
+  color: var(--color-muted);
+  background: #f3f2f0;
+  border-color: var(--color-line);
+}
+
+.dropHintBar[data-kind='sibling'] {
+  color: var(--color-brand-deep);
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 28%, transparent);
+}
+
+.dropTargetRoot {
+  outline: 2px dashed color-mix(in srgb, var(--color-muted) 55%, transparent);
+  outline-offset: -2px;
+  background: rgba(243, 242, 240, 0.65);
 }
 
 .emptyCanvas {
@@ -222,6 +266,7 @@
 }
 
 .block {
+  position: relative;
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 0.45rem;
@@ -231,6 +276,15 @@
   border-radius: var(--radius-sm);
   background: #fff;
   cursor: pointer;
+  transition:
+    border-color var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-fast) var(--ease-out),
+    background var(--motion-fast) var(--ease-out);
+}
+
+.blockSelected {
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-line));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 22%, transparent);
 }
 
 .blockNested {
@@ -238,7 +292,53 @@
   background: #fff8ee;
 }
 
+.dropTargetField {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 28%, transparent);
+  background: var(--color-accent-soft);
+}
+
+.dropTargetSibling {
+  border-color: var(--color-brand-deep);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-deep) 22%, transparent);
+  background: #fff5f7;
+}
+
+.dropTargetContainer {
+  position: relative;
+  border-style: solid;
+  border-color: var(--color-warning);
+  outline: 2px dashed var(--color-warning);
+  outline-offset: 1px;
+  background: var(--color-warning-soft);
+}
+
+.dropBadge {
+  position: absolute;
+  top: -0.55rem;
+  right: 0.55rem;
+  z-index: 2;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--color-accent);
+  pointer-events: none;
+}
+
+.dropBadge[data-kind='sibling'] {
+  background: var(--color-brand-deep);
+}
+
+.dropBadge[data-kind='container'] {
+  background: var(--color-warning);
+}
+
 .containerChildren {
+  position: relative;
   margin: 0.35rem 0 0.75rem 1.4rem;
   padding: 0.55rem;
   border: 1px dashed var(--color-line);
@@ -246,6 +346,10 @@
   display: grid;
   gap: 0.45rem;
   background: rgba(255, 255, 255, 0.55);
+  transition:
+    border-color var(--motion-fast) var(--ease-out),
+    outline-color var(--motion-fast) var(--ease-out),
+    background var(--motion-fast) var(--ease-out);
 }
 
 .containerHint {
@@ -416,6 +520,53 @@
   color: #fffcf7;
   font-weight: 600;
   box-shadow: var(--shadow);
+}
+
+.assetPreview {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.55rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+
+.assetPreview img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #f7f6f4;
+}
+
+.assetMeta {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.assetMeta strong {
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linkBtn {
+  border: 0;
+  background: transparent;
+  color: var(--color-accent);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.linkBtn:hover {
+  color: var(--color-accent-hover);
 }
 
 .overlayLabel {

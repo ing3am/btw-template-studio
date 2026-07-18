@@ -9,6 +9,7 @@ import {
   type TemplateBlock,
 } from './types'
 import { extractJsonPaths } from './extractJsonPaths'
+import { getDianLabel } from './dianLabels'
 import { TextStyleEditor } from './TextStyleEditor'
 import styles from './DatosFieldsEditor.module.css'
 
@@ -21,12 +22,17 @@ type DatosFieldsEditorProps = {
 }
 
 function fieldSummary(field: DatosField): string {
+  const catalogLabel = field.tagId ? getDianLabel(field.tagId)?.label : undefined
+  const labelText =
+    field.label.trim() ||
+    catalogLabel ||
+    (field.mode === 'campo' ? 'Solo valor' : 'Sin etiqueta')
   const value =
     field.mode === 'campo'
       ? field.value || 'sin campo'
       : field.value || 'sin texto'
   const format = field.format !== 'ninguno' ? ` · ${field.format}` : ''
-  return `${field.label || 'Sin etiqueta'} · ${value}${format}`
+  return `${labelText} · ${value}${format}`
 }
 
 export function DatosFieldsEditor({
@@ -197,10 +203,15 @@ export function DatosFieldsEditor({
             {open ? (
               <div className={styles.accordionBody}>
                 <label className={styles.field}>
-                  <span>Etiqueta</span>
+                  <span>Etiqueta (vacía = solo valor en el PDF)</span>
                   <input
                     type="text"
                     value={field.label}
+                    placeholder={
+                      field.tagId
+                        ? getDianLabel(field.tagId)?.label || 'Solo valor'
+                        : 'Texto antes del valor'
+                    }
                     onChange={(event) =>
                       updateField(field.id, { label: event.target.value })
                     }
