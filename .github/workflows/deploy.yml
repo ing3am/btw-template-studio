@@ -30,6 +30,7 @@ jobs:
         env:
           VITE_USE_MOCKS: 'true'
           VITE_API_URL: ''
+          VITE_AUTH_URL: '/api-auth/auth/Authentication'
 
       - name: Prepare remote folder
         uses: appleboy/ssh-action@v1.2.0
@@ -55,3 +56,44 @@ jobs:
           target: ${{ secrets.DEPLOY_PATH }}
           strip_components: 1
           overwrite: true
+
+      - name: Upload nginx auth proxy script
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          password: ${{ secrets.DEPLOY_PASSWORD }}
+          port: 22
+          source: scripts/ensure-nginx-auth-proxy-docker.sh
+          target: /tmp/btw-deploy
+          strip_components: 1
+          overwrite: true
+
+      - name: Configure nginx /api-auth proxy via Docker
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          password: ${{ secrets.DEPLOY_PASSWORD }}
+          port: 22
+          script: |
+            set -e
+            SCRIPT=""
+            for candidate in \
+              /tmp/btw-deploy/ensure-nginx-auth-proxy-docker.sh \
+              /tmp/btw-deploy/scripts/ensure-nginx-auth-proxy-docker.sh \
+              /tmp/ensure-nginx-auth-proxy-docker.sh
+            do
+              if [ -f "$candidate" ]; then
+                SCRIPT="$candidate"
+                break
+              fi
+            done
+            if [ -z "$SCRIPT" ]; then
+              echo "docker nginx proxy script not found" >&2
+              find /tmp/btw-deploy -type f 2>/dev/null || true
+              exit 1
+            fi
+            chmod +x "$SCRIPT"
+            export DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}"
+            bash "$SCRIPT"

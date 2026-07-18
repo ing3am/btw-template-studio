@@ -1,0 +1,57 @@
+name: Server diag
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Diagnose nginx/php
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          password: ${{ secrets.DEPLOY_PASSWORD }}
+          port: 22
+          script: |
+            set +e
+            echo "=== id ==="
+            id
+            echo "=== php ==="
+            command -v php; command -v php8.3; command -v php8.2; command -v php8.1
+            ls /etc/php 2>/dev/null
+            ls /run/php 2>/dev/null
+            echo "=== nginx sites ==="
+            ls -la /etc/nginx/sites-enabled/ 2>/dev/null
+            ls -la /etc/nginx/conf.d/ 2>/dev/null
+            ls -la /etc/nginx/sites-available/ 2>/dev/null
+            echo "=== configs ==="
+            for f in /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* /etc/nginx/sites-available/*; do
+              [ -e "$f" ] || continue
+              echo "---- $f ----"
+              sed -n '1,220p' "$f" 2>/dev/null
+            done
+            echo "=== deploy path ==="
+            ls -la "${{ secrets.DEPLOY_PATH }}" | head -20
+            echo "=== write nginx? ==="
+            touch /etc/nginx/testwrite 2>&1
+            rm -f /etc/nginx/testwrite 2>&1
+
+            echo "=== docker ==="
+            docker ps --format 'table {{.Names}}	{{.Ports}}	{{.Image}}' 2>&1 | head -40
+            docker info 2>&1 | head -5
+            echo "=== can bind ports? ==="
+            ss -tlnp 2>/dev/null | head -30 || netstat -tlnp 2>/dev/null | head -30
+            echo "=== home writable docker test ==="
+            mkdir -p "$HOME/btw-auth-proxy"
+            echo ok > "$HOME/btw-auth-proxy/probe.txt"
+            ls -la "$HOME/btw-auth-proxy"
+
+            echo "=== curl upstream ==="
+            curl -sS -D - -o /tmp/up.txt -X POST 'https://test-apiconnect.febtw.co/auth/Authentication' -H 'user: x' -H 'password: y' --data-binary '' | head -20
+            echo "=== cors probe ==="
+            curl -sS -D - -o /dev/null -X OPTIONS 'https://test-apiconnect.febtw.co/auth/Authentication' \
+              -H 'Origin: https://premiundev.com' \
+              -H 'Access-Control-Request-Method: POST' \
+              -H 'Access-Control-Request-Headers: user,password,content-type' | head -25

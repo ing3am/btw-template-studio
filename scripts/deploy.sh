@@ -41,4 +41,11 @@ sshpass -e rsync -avz --delete \
   -e "ssh ${SSH_OPTS[*]}" \
   dist/ "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/"
 
+echo "→ Configurar proxy nginx /api-auth…"
+sshpass -e scp "${SSH_OPTS[@]}" \
+  "$ROOT/scripts/ensure-nginx-auth-proxy.sh" \
+  "${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/ensure-nginx-auth-proxy.sh"
+sshpass -e ssh "${SSH_OPTS[@]}" "${DEPLOY_USER}@${DEPLOY_HOST}" \
+  "chmod +x /tmp/ensure-nginx-auth-proxy.sh && DEPLOY_PATH='$DEPLOY_PATH' /tmp/ensure-nginx-auth-proxy.sh"
+
 echo "✓ Publicado en https://${DEPLOY_HOST}"

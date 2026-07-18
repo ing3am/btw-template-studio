@@ -44,7 +44,12 @@ Vite proxy:
 
 ## Producción
 
-Hace falta **proxy same-origin** (nginx) o CORS habilitado en el API.
+El deploy configura nginx para proxy same-origin:
+
+- Browser → `https://premiundev.com/api-auth/auth/Authentication`
+- nginx → `https://test-apiconnect.febtw.co/auth/Authentication`
+
+Script: `scripts/ensure-nginx-auth-proxy.sh` (se ejecuta en cada deploy).
 
 ## Fuera de alcance
 - Recuperar contraseña / registro
