@@ -11,6 +11,8 @@ export type TemplateVersion = {
   schemaJson: string
   sampleDataJson: string
   blocksJson: string
+  /** Embedded images as JSON array ({ id, name, mime, dataUrl }). */
+  assetsJson?: string
   createdAt: string
   isPublished: boolean
 }
@@ -40,4 +42,5 @@ export type SaveDraftInput = {
   schemaJson: string
   sampleDataJson: string
   blocksJson: string
+  assetsJson?: string
 }

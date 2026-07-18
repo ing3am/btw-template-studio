@@ -26,6 +26,7 @@ import {
 } from '@/features/visual-builder/types'
 import {
   listTemplateAssets,
+  serializeTemplateAssetsJson,
   type TemplateAsset,
 } from '@/features/templates/templateAssets'
 import { serializeBlocksToDocument } from '@/features/visual-builder/serializeToHtml'
@@ -134,8 +135,9 @@ export function TemplateEditorPage() {
         css,
         schemaJson,
         sampleDataJson,
+        assetsJson: id ? serializeTemplateAssetsJson(id) : '[]',
       }),
-    [blocks, html, css, schemaJson, sampleDataJson],
+    [blocks, html, css, schemaJson, sampleDataJson, id, assets],
   )
 
   const dirty = Boolean(baseline) && currentPayload !== baseline
@@ -163,6 +165,7 @@ export function TemplateEditorPage() {
         schemaJson,
         sampleDataJson,
         blocksJson: JSON.stringify(blocks),
+        assetsJson: id ? serializeTemplateAssetsJson(id) : '[]',
       })
       setBaseline(currentPayload)
       setStatusText(`Guardado · v${version.versionNumber}`)
@@ -176,6 +179,7 @@ export function TemplateEditorPage() {
     css,
     currentPayload,
     html,
+    id,
     sampleDataJson,
     saveDraft,
     schemaJson,
@@ -191,9 +195,8 @@ export function TemplateEditorPage() {
       return
     }
     try {
-      if (dirty) {
-        await handleSave()
-      }
+      // Always persist draft (incl. images) before publish so PDF render has assets.
+      await handleSave()
       setStatusText('Publicando…')
       const version = await publish.mutateAsync()
       setStatusText(`Publicada · v${version.versionNumber}`)
@@ -202,7 +205,7 @@ export function TemplateEditorPage() {
       setStatusText('Error al publicar')
       toast.push('No pudimos publicar la plantilla', 'error')
     }
-  }, [blocks, dirty, handleSave, publish, toast])
+  }, [blocks, handleSave, publish, toast])
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {

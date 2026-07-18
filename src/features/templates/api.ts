@@ -1,4 +1,5 @@
 ﻿import { createBlankBundle, createSeedBundles } from './seed'
+import { hydrateTemplateAssetsFromJson } from './templateAssets'
 import type {
   CreateTemplateInput,
   SaveDraftInput,
@@ -106,6 +107,7 @@ function normalizeVersion(raw: TemplateVersion & { createdAt: string | Date }): 
     schemaJson: raw.schemaJson ?? '{}',
     sampleDataJson: raw.sampleDataJson ?? '{}',
     blocksJson: raw.blocksJson ?? '[]',
+    assetsJson: raw.assetsJson ?? '[]',
     createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : new Date(raw.createdAt).toISOString(),
     isPublished: Boolean(raw.isPublished),
   }
@@ -115,10 +117,13 @@ function normalizeBundle(raw: {
   template: Template & { updatedAt: string | Date }
   versions: Array<TemplateVersion & { createdAt: string | Date }>
 }): TemplateBundle {
-  return {
+  const bundle = {
     template: normalizeTemplate(raw.template),
     versions: (raw.versions ?? []).map(normalizeVersion),
   }
+  const latest = latestVersion(bundle)
+  hydrateTemplateAssetsFromJson(bundle.template.id, latest.assetsJson)
+  return bundle
 }
 
 async function listTemplatesMock(): Promise<Template[]> {

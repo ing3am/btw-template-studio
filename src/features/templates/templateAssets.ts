@@ -101,3 +101,53 @@ export function qrImageUrlFromPayload(payload: string, size = 200): string {
   if (!data) return ''
   return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=8&data=${encodeURIComponent(data)}`
 }
+
+/** Serialize local assets for API persistence (PDF render). */
+export function serializeTemplateAssetsJson(templateId: string): string {
+  const assets = listTemplateAssets(templateId).map((asset) => ({
+    id: asset.id,
+    name: asset.name,
+    mime: asset.mime,
+    dataUrl: asset.dataUrl,
+  }))
+  return JSON.stringify(assets)
+}
+
+/**
+ * Hydrate localStorage from a version returned by the API
+ * (so preview keeps working after reload / another browser).
+ */
+export function hydrateTemplateAssetsFromJson(
+  templateId: string,
+  assetsJson?: string | null,
+): void {
+  if (!templateId || !assetsJson?.trim() || assetsJson.trim() === '[]') return
+  try {
+    const parsed = JSON.parse(assetsJson) as Array<{
+      id?: string
+      name?: string
+      mime?: string
+      dataUrl?: string
+    }>
+    if (!Array.isArray(parsed) || parsed.length === 0) return
+
+    const now = new Date().toISOString()
+    const next: TemplateAsset[] = parsed
+      .filter((item) => item?.id && item?.dataUrl)
+      .map((item) => ({
+        id: String(item.id),
+        templateId,
+        name: item.name || 'imagen',
+        mime: item.mime || 'image/png',
+        dataUrl: String(item.dataUrl),
+        createdAt: now,
+      }))
+
+    if (next.length === 0) return
+    const store = readStore()
+    store[templateId] = next
+    writeStore(store)
+  } catch {
+    /* ignore invalid assetsJson */
+  }
+}
