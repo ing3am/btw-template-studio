@@ -1,0 +1,118 @@
+.lab {
+  max-width: 960px;
+}
+
+.form {
+  display: grid;
+  gap: 0.85rem;
+  margin-bottom: 1.1rem;
+  padding: 1.15rem 1.2rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.field,
+.fieldCompact {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.field span,
+.fieldCompact span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  letter-spacing: 0.02em;
+}
+
+.field input,
+.fieldCompact input {
+  width: 100%;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 0.85rem;
+  font: inherit;
+  color: var(--color-ink);
+  background: #fff;
+}
+
+.field input {
+  font-family: ui-monospace, 'Cascadia Code', 'Segoe UI Mono', monospace;
+  font-size: 0.92rem;
+}
+
+.field input:focus,
+.fieldCompact input:focus {
+  outline: 2px solid color-mix(in srgb, var(--color-accent) 45%, transparent);
+  border-color: var(--color-accent);
+}
+
+.fieldCompact {
+  max-width: 16rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.error {
+  margin: 0 0 0.85rem;
+  color: var(--color-danger);
+  font-size: 0.92rem;
+}
+
+.previewPanel {
+  min-height: 28rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  background: var(--color-bg-accent);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.previewMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-line);
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.previewMeta a {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.previewFrame {
+  width: 100%;
+  min-height: 32rem;
+  border: 0;
+  background: #fff;
+}
+
+.placeholder {
+  margin: 0;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--color-muted);
+  align-self: center;
+}
+
+@media (max-width: 720px) {
+  .fieldCompact {
+    max-width: none;
+  }
+
+  .previewFrame {
+    min-height: 22rem;
+  }
+}
