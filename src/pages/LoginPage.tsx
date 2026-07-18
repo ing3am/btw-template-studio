@@ -3,7 +3,6 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import {
   Eye,
   EyeOff,
-  FileText,
   LayoutTemplate,
   LoaderCircle,
   Lock,
@@ -91,12 +90,6 @@ export function LoginPage() {
     <div className={styles.page}>
       <section className={styles.brand} aria-label="BTW Template Studio">
         <div className={styles.brandGlow} aria-hidden="true" />
-        <div className={styles.brandTop}>
-          <span className={styles.logoMark} aria-hidden="true">
-            <FileText size={14} />
-          </span>
-          <span className={styles.logoText}>BTW</span>
-        </div>
 
         <div className={styles.brandBody}>
           <div className={styles.brandInner}>

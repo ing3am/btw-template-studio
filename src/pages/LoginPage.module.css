@@ -16,10 +16,10 @@
   color: #fffcf7;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 55% 45% at 78% 42%, rgba(255, 64, 96, 0.28), transparent 58%),
-    radial-gradient(ellipse 85% 70% at 72% 50%, rgba(199, 0, 57, 0.55), transparent 62%),
-    radial-gradient(ellipse 120% 100% at 50% 50%, transparent 35%, rgba(5, 2, 4, 0.92) 100%),
-    linear-gradient(125deg, #070305 0%, #1c050c 32%, #5c001d 58%, #8f0029 78%, #0a0305 100%);
+    radial-gradient(ellipse 55% 45% at 78% 42%, rgba(255, 140, 60, 0.42), transparent 58%),
+    radial-gradient(ellipse 85% 70% at 72% 50%, rgba(232, 92, 12, 0.55), transparent 62%),
+    radial-gradient(ellipse 120% 100% at 50% 50%, transparent 35%, rgba(12, 6, 2, 0.92) 100%),
+    linear-gradient(125deg, #120805 0%, #2a1208 28%, #8a3a0a 55%, #e85c0c 78%, #0c0603 100%);
   animation: brandIn var(--motion-base) var(--ease-out) both;
 }
 
@@ -30,33 +30,8 @@
   width: min(48vw, 26rem);
   height: min(48vw, 26rem);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(199, 0, 57, 0.35), transparent 68%);
+  background: radial-gradient(circle, rgba(255, 120, 40, 0.38), transparent 68%);
   pointer-events: none;
-}
-
-.brandTop {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  z-index: 1;
-}
-
-.logoMark {
-  display: grid;
-  place-items: center;
-  width: 1.7rem;
-  height: 1.7rem;
-  border-radius: 0.4rem;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fffcf7;
-}
-
-.logoText {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
 }
 
 .brandInner {
@@ -98,7 +73,7 @@
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #ff8aa3;
+  color: #ffb078;
 }
 
 .brandTitle {
@@ -139,10 +114,10 @@
   width: 2.15rem;
   height: 2.15rem;
   border-radius: 999px;
-  background: rgba(199, 0, 57, 0.85);
+  background: rgba(232, 92, 12, 0.9);
   color: #fffcf7;
   flex-shrink: 0;
-  box-shadow: 0 0 0 4px rgba(199, 0, 57, 0.18);
+  box-shadow: 0 0 0 4px rgba(232, 92, 12, 0.2);
 }
 
 .feature strong {
@@ -164,7 +139,7 @@
   z-index: 1;
   margin: 0;
   padding-left: 0.75rem;
-  border-left: 2px solid rgba(255, 138, 163, 0.75);
+  border-left: 2px solid rgba(255, 176, 120, 0.8);
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
