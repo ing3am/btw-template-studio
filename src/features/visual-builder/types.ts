@@ -162,7 +162,7 @@ function emisorFields(): string {
 function headerFields(): string {
   return stringifyDatosFields([
     fieldFromTag('doc-tipo', {
-      valueStyle: { ...defaultValueStyle(), fontSizePx: 22, bold: true },
+      valueStyle: { ...defaultValueStyle(), fontSizePx: 12, bold: true },
     }),
     fieldFromTag('doc-numero'),
     fieldFromTag('doc-prefijo'),
@@ -198,7 +198,7 @@ function totalesFields(): string {
     fieldFromTag('totales-consumo'),
     fieldFromTag('totales-consumo-tarifa'),
     fieldFromTag('totales-total', {
-      valueStyle: { ...defaultValueStyle(), fontSizePx: 18, bold: true },
+      valueStyle: { ...defaultValueStyle(), fontSizePx: 11, bold: true },
     }),
   ])
 }

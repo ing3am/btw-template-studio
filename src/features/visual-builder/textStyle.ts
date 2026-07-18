@@ -9,17 +9,20 @@ export type TextStyle = {
   align: TextAlign
 }
 
+/** Dense print-like scale — see REQUERIMIENTO-MEDIDAS.md */
 export const FONT_SIZE_PRESETS = [
-  { id: 'pequeno', label: 'Pequeño', px: 12 },
-  { id: 'normal', label: 'Normal', px: 14 },
-  { id: 'grande', label: 'Grande', px: 18 },
-  { id: 'titulo', label: 'Título', px: 24 },
+  { id: 'pequeno', label: 'Pequeño', px: 8 },
+  { id: 'normal', label: 'Normal', px: 9 },
+  { id: 'grande', label: 'Grande', px: 11 },
+  { id: 'titulo', label: 'Título', px: 12 },
 ] as const
+
+const BASE_SIZE = 9
 
 export function defaultLabelStyle(): TextStyle {
   return {
     color: '#7a6b62',
-    fontSizePx: 12,
+    fontSizePx: BASE_SIZE,
     bold: false,
     italic: false,
     underline: false,
@@ -30,7 +33,7 @@ export function defaultLabelStyle(): TextStyle {
 export function defaultValueStyle(): TextStyle {
   return {
     color: '#1c1412',
-    fontSizePx: 14,
+    fontSizePx: BASE_SIZE,
     bold: true,
     italic: false,
     underline: false,
@@ -41,7 +44,7 @@ export function defaultValueStyle(): TextStyle {
 export function defaultTitleStyle(): TextStyle {
   return {
     color: '#f94c10',
-    fontSizePx: 14,
+    fontSizePx: BASE_SIZE,
     bold: true,
     italic: false,
     underline: false,
@@ -52,7 +55,7 @@ export function defaultTitleStyle(): TextStyle {
 export function defaultBodyStyle(): TextStyle {
   return {
     color: '#7a6b62',
-    fontSizePx: 14,
+    fontSizePx: BASE_SIZE,
     bold: false,
     italic: false,
     underline: false,
@@ -63,7 +66,7 @@ export function defaultBodyStyle(): TextStyle {
 export function defaultHeaderCellStyle(): TextStyle {
   return {
     color: '#1c1412',
-    fontSizePx: 13,
+    fontSizePx: BASE_SIZE,
     bold: true,
     italic: false,
     underline: false,
@@ -74,7 +77,7 @@ export function defaultHeaderCellStyle(): TextStyle {
 export function defaultTableCellStyle(): TextStyle {
   return {
     color: '#1c1412',
-    fontSizePx: 13,
+    fontSizePx: BASE_SIZE,
     bold: false,
     italic: false,
     underline: false,

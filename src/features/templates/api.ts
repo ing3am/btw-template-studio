@@ -7,7 +7,7 @@ import type {
   TemplateVersion,
 } from './types'
 
-const STORAGE_KEY = 'btw-template-studio.templates.v8'
+const STORAGE_KEY = 'btw-template-studio.templates.v9'
 
 function readStore(): TemplateBundle[] {
   const raw = localStorage.getItem(STORAGE_KEY)

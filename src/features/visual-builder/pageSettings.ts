@@ -186,6 +186,7 @@ html, body {
 export function buildDocumentContentCss(): string {
   return `body {
   font-family: "DM Sans", "Segoe UI", sans-serif;
+  font-size: 9px;
   color: #1c1412;
 }
 
