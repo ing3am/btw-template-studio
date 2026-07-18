@@ -1,16 +1,43 @@
 import { useId, useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, LoaderCircle, Lock, User } from 'lucide-react'
+import {
+  Eye,
+  EyeOff,
+  FileText,
+  LayoutTemplate,
+  LoaderCircle,
+  Lock,
+  ShieldCheck,
+  SlidersHorizontal,
+  User,
+} from 'lucide-react'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { DEMO_CREDENTIALS } from '@/features/auth/api'
 import { Button } from '@/shared/ui/Button'
 import { useToast } from '@/shared/ui/Toast'
-import loginArt from '@/assets/btw-login.png'
 import styles from './LoginPage.module.css'
 
 type LocationState = {
   from?: string
 }
+
+const FEATURES = [
+  {
+    icon: LayoutTemplate,
+    title: 'Diseños profesionales',
+    description: 'Plantillas prediseñadas para cada necesidad.',
+  },
+  {
+    icon: SlidersHorizontal,
+    title: 'Control total',
+    description: 'Personaliza cada detalle de tu factura.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Claridad garantizada',
+    description: 'Facturas limpias, legibles y 100% confiables.',
+  },
+] as const
 
 export function LoginPage() {
   const { isAuthenticated, login } = useAuth()
@@ -62,11 +89,41 @@ export function LoginPage() {
   return (
     <div className={styles.page}>
       <section className={styles.brand} aria-label="BTW Template Studio">
-        <img
-          className={styles.brandArt}
-          src={loginArt}
-          alt="BTW Template Studio — diseña representaciones gráficas de facturación electrónica"
-        />
+        <div className={styles.brandGlow} aria-hidden="true" />
+        <div className={styles.brandTop}>
+          <span className={styles.logoMark} aria-hidden="true">
+            <FileText size={14} />
+          </span>
+          <span className={styles.logoText}>BTW</span>
+        </div>
+
+        <div className={styles.brandInner}>
+          <p className={styles.eyebrow}>BTW</p>
+          <h1 className={styles.brandTitle}>Template Studio</h1>
+          <p className={styles.brandLead}>
+            Diseña representaciones gráficas de facturación electrónica con
+            control y claridad.
+          </p>
+
+          <ul className={styles.features}>
+            {FEATURES.map((item) => {
+              const Icon = item.icon
+              return (
+                <li key={item.title} className={styles.feature}>
+                  <span className={styles.featureIcon} aria-hidden="true">
+                    <Icon size={16} />
+                  </span>
+                  <div>
+                    <strong>{item.title}</strong>
+                    <p>{item.description}</p>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+
+        <p className={styles.brandFoot}>Plantillas PDF · Colombia</p>
       </section>
 
       <section className={styles.panel}>
