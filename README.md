@@ -18,6 +18,8 @@ Abre `http://localhost:5173`.
 
 Con `VITE_USE_MOCKS=true` (default) las plantillas viven en `localStorage`.
 
+En el **Preview HTML** del editor puedes acercar/alejar (50%–200%) para revisar detalle del documento. El zoom es solo de vista; no altera el HTML descargado ni lo publicado.
+
 ## Scripts
 
 | Comando | Descripción |
