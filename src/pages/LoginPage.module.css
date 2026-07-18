@@ -12,9 +12,9 @@
   min-height: 100vh;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 80% 60% at 18% 12%, rgba(255, 255, 255, 0.08), transparent 55%),
-    radial-gradient(ellipse 70% 55% at 88% 85%, rgba(80, 0, 24, 0.75), transparent 52%),
-    linear-gradient(155deg, #5c001d 0%, #8f0029 42%, #c70039 78%, #12080c 130%);
+    radial-gradient(ellipse 80% 60% at 18% 12%, rgba(255, 255, 255, 0.05), transparent 55%),
+    radial-gradient(ellipse 70% 55% at 88% 85%, rgba(45, 0, 14, 0.85), transparent 52%),
+    linear-gradient(155deg, #3a0012 0%, #5c001d 38%, #8f0029 72%, #0a0406 130%);
   animation: brandIn var(--motion-base) var(--ease-out) both;
 }
 
