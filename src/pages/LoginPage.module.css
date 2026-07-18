@@ -299,24 +299,6 @@
   outline-offset: 2px;
 }
 
-.demo {
-  margin-top: 1.5rem;
-  padding-top: 1.15rem;
-  border-top: 1px solid var(--color-line);
-}
-
-.demo p {
-  margin: 0;
-  color: var(--color-muted);
-  font-size: 0.78rem;
-  line-height: 1.4;
-}
-
-.demo strong {
-  color: var(--color-ink);
-  font-weight: 600;
-}
-
 .spin {
   animation: spin 0.9s linear infinite;
 }

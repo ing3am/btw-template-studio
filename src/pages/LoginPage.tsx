@@ -11,7 +11,6 @@ import {
   User,
 } from 'lucide-react'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { DEMO_CREDENTIALS } from '@/features/auth/api'
 import { Button } from '@/shared/ui/Button'
 import { useToast } from '@/shared/ui/Toast'
 import loginArt from '@/assets/imglogin.png'
@@ -205,13 +204,6 @@ export function LoginPage() {
               {submitting ? 'Ingresando…' : 'Ingresar'}
             </Button>
           </form>
-
-          <aside className={styles.demo} aria-label="Credenciales de demo">
-            <p>
-              Demo: <strong>{DEMO_CREDENTIALS.username}</strong> /{' '}
-              <strong>{DEMO_CREDENTIALS.password}</strong>
-            </p>
-          </aside>
         </div>
       </section>
     </div>
