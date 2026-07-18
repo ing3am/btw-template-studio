@@ -41,6 +41,18 @@ function latestVersion(bundle: TemplateBundle): TemplateVersion {
   return [...bundle.versions].sort((a, b) => b.versionNumber - a.versionNumber)[0]
 }
 
+function authHeaders(): HeadersInit {
+  try {
+    const raw = localStorage.getItem('btw-template-studio.auth.v1')
+    if (!raw) return {}
+    const session = JSON.parse(raw) as { token?: string }
+    if (!session?.token) return {}
+    return { Authorization: `Bearer ${session.token}` }
+  } catch {
+    return {}
+  }
+}
+
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   if (!apiBase) {
     throw new Error('VITE_API_URL no está configurada.')
@@ -50,6 +62,7 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders(),
       ...(init?.headers ?? {}),
     },
   })
