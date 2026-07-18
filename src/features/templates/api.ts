@@ -1,4 +1,4 @@
-import { createBlankBundle, createSeedBundles } from './seed'
+﻿import { createBlankBundle, createSeedBundles } from './seed'
 import type {
   CreateTemplateInput,
   SaveDraftInput,
@@ -7,7 +7,8 @@ import type {
   TemplateVersion,
 } from './types'
 
-const STORAGE_KEY = 'btw-template-studio.templates.v10'
+/** Bumped after merge: DIAN labels (main) + Seis Amazonas builder (local). */
+const STORAGE_KEY = 'btw-template-studio.templates.v18'
 
 function readStore(): TemplateBundle[] {
   const raw = localStorage.getItem(STORAGE_KEY)

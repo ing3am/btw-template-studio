@@ -19,6 +19,7 @@ export type BlockType =
   | 'texto'
   | 'espacio'
   | 'imagen'
+  | 'salto'
 
 export type DatosFieldMode = 'texto' | 'campo'
 export type DatosFormat = 'ninguno' | 'moneda' | 'fecha'
@@ -170,15 +171,21 @@ function headerFields(): string {
   ])
 }
 
-function autorizacionFields(): string {
+function autorizacionFields(valueStyle?: Partial<TextStyle>): string {
+  const vs = {
+    ...defaultValueStyle(),
+    fontSizePx: 7,
+    bold: false,
+    ...valueStyle,
+  }
+  const ls = { ...defaultLabelStyle(), fontSizePx: 7, bold: true }
   return stringifyDatosFields([
-    fieldFromTag('doc-autorizacion'),
-    fieldFromTag('doc-rango-desde'),
-    fieldFromTag('doc-rango-hasta'),
-    fieldFromTag('doc-vigencia-inicio'),
-    fieldFromTag('doc-vigencia-fin'),
-    fieldFromTag('doc-fecha-generacion'),
-    fieldFromTag('doc-hora-generacion'),
+    fieldFromTag('doc-autorizacion', { labelStyle: ls, valueStyle: vs }),
+    fieldFromTag('doc-prefijo', { labelStyle: ls, valueStyle: vs }),
+    fieldFromTag('doc-rango-desde', { labelStyle: ls, valueStyle: vs }),
+    fieldFromTag('doc-rango-hasta', { labelStyle: ls, valueStyle: vs }),
+    fieldFromTag('doc-vigencia-inicio', { labelStyle: ls, valueStyle: vs }),
+    fieldFromTag('doc-vigencia-fin', { labelStyle: ls, valueStyle: vs }),
   ])
 }
 
@@ -187,19 +194,6 @@ function pagoFields(): string {
     fieldFromTag('pago-forma'),
     fieldFromTag('pago-medio'),
     fieldFromTag('pago-plazo'),
-  ])
-}
-
-function totalesFields(): string {
-  return stringifyDatosFields([
-    fieldFromTag('totales-subtotal'),
-    fieldFromTag('totales-iva'),
-    fieldFromTag('totales-iva-tarifa'),
-    fieldFromTag('totales-consumo'),
-    fieldFromTag('totales-consumo-tarifa'),
-    fieldFromTag('totales-total', {
-      valueStyle: { ...defaultValueStyle(), fontSizePx: 11, bold: true },
-    }),
   ])
 }
 
@@ -212,13 +206,226 @@ function softwareFields(): string {
   ])
 }
 
-function defaultTableColumns(): string {
+/** Body col1 — SEÑORES (etiquetas DIAN + presentación FE) */
+function senoresLeftFields(): string {
+  const small = { ...defaultValueStyle(), fontSizePx: 8, bold: false }
+  const label = { ...defaultLabelStyle(), fontSizePx: 8, bold: true }
+  return stringifyDatosFields([
+    fieldFromTag('cliente-nombre', {
+      label: '',
+      valueStyle: { ...small, fontSizePx: 9, bold: true },
+    }),
+    fieldFromTag('cliente-tipo-doc', {
+      label: 'TIPO DE DOCUMENTO',
+      labelStyle: label,
+      valueStyle: small,
+    }),
+    fieldFromTag('cliente-nit', {
+      label: 'NIT',
+      labelStyle: label,
+      valueStyle: small,
+    }),
+    fieldFromTag('cliente-telefono', {
+      label: 'TELÉFONO',
+      labelStyle: label,
+      valueStyle: small,
+    }),
+  ])
+}
+
+/** Body col2 — dirección / ciudad / depto / país */
+function senoresRightFields(): string {
+  const small = { ...defaultValueStyle(), fontSizePx: 8, bold: false }
+  const label = { ...defaultLabelStyle(), fontSizePx: 8, bold: true }
+  return stringifyDatosFields([
+    fieldFromTag('cliente-direccion', {
+      label: 'DIRECCIÓN',
+      labelStyle: label,
+      valueStyle: small,
+    }),
+    fieldFromTag('cliente-ciudad', {
+      label: 'CIUDAD',
+      labelStyle: label,
+      valueStyle: small,
+    }),
+    fieldFromTag('cliente-departamento', {
+      label: 'DEPARTAMENTO',
+      labelStyle: label,
+      valueStyle: small,
+    }),
+    createDatosField({
+      label: 'PAÍS',
+      mode: 'campo',
+      value: 'cliente.pais',
+      labelStyle: label,
+      valueStyle: small,
+    }),
+  ])
+}
+
+function totalesFields(): string {
+  return stringifyDatosFields([
+    fieldFromTag('totales-subtotal', { label: 'Subtotal' }),
+    createDatosField({
+      label: 'Descuento',
+      mode: 'campo',
+      value: 'totales.descuento',
+      format: 'moneda',
+    }),
+    fieldFromTag('totales-iva'),
+    fieldFromTag('totales-iva-tarifa'),
+    fieldFromTag('totales-consumo', { label: 'INC' }),
+    fieldFromTag('totales-consumo-tarifa'),
+    createDatosField({
+      label: 'Otros impuestos',
+      mode: 'campo',
+      value: 'totales.otrosImpuestos',
+      format: 'moneda',
+    }),
+    createDatosField({
+      label: 'Retenciones',
+      mode: 'campo',
+      value: 'totales.retenciones',
+      format: 'moneda',
+    }),
+    fieldFromTag('totales-total', {
+      label: 'Total COP',
+      valueStyle: { ...defaultValueStyle(), fontSizePx: 11, bold: true },
+    }),
+  ])
+}
+
+function anexoCabeceraColumns(): string {
+  const h = { ...defaultHeaderCellStyle(), fontSizePx: 8, align: 'centro' as const }
+  const c = { ...defaultTableCellStyle(), fontSizePx: 8, align: 'centro' as const }
   return stringifyTableColumns([
-    createTableColumn({ title: 'Código', property: 'codigo' }),
-    createTableColumn({ title: 'Descripción', property: 'descripcion' }),
-    createTableColumn({ title: 'Cant.', property: 'cantidad' }),
-    createTableColumn({ title: 'Valor unit.', property: 'valorUnitario' }),
-    createTableColumn({ title: 'Valor', property: 'valor' }),
+    createTableColumn({ title: 'Factura', property: 'factura', headerStyle: h, cellStyle: c }),
+    createTableColumn({
+      title: 'Código prestador',
+      property: 'codigoPrestador',
+      headerStyle: h,
+      cellStyle: c,
+    }),
+    createTableColumn({
+      title: 'Fecha inicio',
+      property: 'fechaInicio',
+      headerStyle: h,
+      cellStyle: c,
+    }),
+    createTableColumn({
+      title: 'Fecha fin',
+      property: 'fechaFin',
+      headerStyle: h,
+      cellStyle: c,
+    }),
+  ])
+}
+
+function anexoPacientesColumns(): string {
+  const h = { ...defaultHeaderCellStyle(), fontSizePx: 7, align: 'centro' as const }
+  const c = { ...defaultTableCellStyle(), fontSizePx: 7, align: 'centro' as const }
+  return stringifyTableColumns([
+    createTableColumn({ title: 'Tipo ID', property: 'tipoId', headerStyle: h, cellStyle: c }),
+    createTableColumn({ title: '# ID', property: 'numeroId', headerStyle: h, cellStyle: c }),
+    createTableColumn({
+      title: 'Nombre paciente',
+      property: 'nombre',
+      headerStyle: h,
+      cellStyle: c,
+    }),
+    createTableColumn({ title: 'Concepto', property: 'concepto', headerStyle: h, cellStyle: c }),
+    createTableColumn({ title: 'Valor', property: 'valor', headerStyle: h, cellStyle: c }),
+    createTableColumn({
+      title: 'Autorización',
+      property: 'autorizacion',
+      headerStyle: h,
+      cellStyle: c,
+    }),
+    createTableColumn({ title: 'Póliza', property: 'poliza', headerStyle: h, cellStyle: c }),
+    createTableColumn({ title: 'Contrato', property: 'contrato', headerStyle: h, cellStyle: c }),
+    createTableColumn({
+      title: 'Fecha ingreso',
+      property: 'fechaIngreso',
+      headerStyle: h,
+      cellStyle: c,
+    }),
+    createTableColumn({
+      title: 'Fecha salida',
+      property: 'fechaSalida',
+      headerStyle: h,
+      cellStyle: c,
+    }),
+  ])
+}
+
+function defaultTableColumns(): string {
+  const numHeader = {
+    ...defaultHeaderCellStyle(),
+    fontSizePx: 10,
+    align: 'derecha' as const,
+  }
+  const numCell = {
+    ...defaultTableCellStyle(),
+    fontSizePx: 10,
+    align: 'derecha' as const,
+  }
+  const textHeader = { ...defaultHeaderCellStyle(), fontSizePx: 10 }
+  const textCell = { ...defaultTableCellStyle(), fontSizePx: 10 }
+  return stringifyTableColumns([
+    createTableColumn({
+      title: 'Línea',
+      property: 'linea',
+      headerStyle: numHeader,
+      cellStyle: numCell,
+    }),
+    createTableColumn({
+      title: 'Código',
+      property: 'codigo',
+      headerStyle: textHeader,
+      cellStyle: textCell,
+    }),
+    createTableColumn({
+      title: 'Descripción',
+      property: 'descripcion',
+      headerStyle: textHeader,
+      cellStyle: textCell,
+    }),
+    createTableColumn({
+      title: 'Cantidad',
+      property: 'cantidad',
+      headerStyle: numHeader,
+      cellStyle: numCell,
+    }),
+    createTableColumn({
+      title: 'Unidad',
+      property: 'unidad',
+      headerStyle: textHeader,
+      cellStyle: textCell,
+    }),
+    createTableColumn({
+      title: 'Valor Unitario',
+      property: 'valorUnitario',
+      headerStyle: numHeader,
+      cellStyle: numCell,
+    }),
+    createTableColumn({
+      title: 'Dcto',
+      property: 'descuento',
+      headerStyle: numHeader,
+      cellStyle: numCell,
+    }),
+    createTableColumn({
+      title: '%IVA',
+      property: 'iva',
+      headerStyle: numHeader,
+      cellStyle: numCell,
+    }),
+    createTableColumn({
+      title: 'Total',
+      property: 'total',
+      headerStyle: numHeader,
+      cellStyle: numCell,
+    }),
   ])
 }
 
@@ -231,14 +438,13 @@ export const BLOCK_CATALOG: {
   {
     type: 'contenedor',
     label: 'Contenedor',
-    description: 'Agrupa bloques en 1, 2 o 3 columnas',
+    description: 'Fila dinámica: cada hijo es una celda (anchos con slider)',
     defaults: {
       title: '',
-      columns: 2,
-      padding: 16,
-      border: true,
+      columnWidths: '',
+      padding: 0,
+      border: false,
       background: '#ffffff',
-      align: 'izquierda',
       titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
     },
   },
@@ -247,12 +453,17 @@ export const BLOCK_CATALOG: {
     label: 'Datos',
     description: 'Filas con texto o campos del JSON',
     defaults: {
-      title: 'Datos',
+      title: '',
       panelName: '',
       fieldsJson: stringifyDatosFields([
         createDatosField({ label: 'Campo', mode: 'texto', value: '' }),
       ]),
-      columna: 1,
+      cellAlign: 'izquierda',
+      cellVAlign: 'arriba',
+      boxBorder: false,
+      boxRadius: 0,
+      boxPadding: 0,
+      boxBorderColor: '#888888',
       labelWidth: 120,
       labelValueGap: 8,
       titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
@@ -265,7 +476,12 @@ export const BLOCK_CATALOG: {
     defaults: {
       arrayPath: 'items',
       columnsJson: defaultTableColumns(),
-      columna: 1,
+      cellAlign: 'izquierda',
+      cellVAlign: 'arriba',
+      boxBorder: false,
+      boxRadius: 0,
+      boxPadding: 0,
+      boxBorderColor: '#888888',
     },
   },
   {
@@ -274,7 +490,12 @@ export const BLOCK_CATALOG: {
     description: 'Nota o párrafo libre',
     defaults: {
       content: 'Texto de ejemplo',
-      columna: 1,
+      cellAlign: 'izquierda',
+      cellVAlign: 'arriba',
+      boxBorder: false,
+      boxRadius: 0,
+      boxPadding: 0,
+      boxBorderColor: '#888888',
       contentStyleJson: stringifyTextStyle(defaultBodyStyle()),
     },
   },
@@ -284,7 +505,16 @@ export const BLOCK_CATALOG: {
     description: 'Separación vertical',
     defaults: {
       size: 16,
-      columna: 1,
+      cellAlign: 'izquierda',
+      cellVAlign: 'arriba',
+    },
+  },
+  {
+    type: 'salto',
+    label: 'Nueva página',
+    description: 'Salto de página con orientación (vertical/horizontal)',
+    defaults: {
+      orientation: 'horizontal',
     },
   },
   {
@@ -316,126 +546,508 @@ export function createBlock(type: BlockType): TemplateBlock {
 }
 
 export function createDefaultFacturaBlocks(): TemplateBlock[] {
-  const header = createBlock('datos')
-  header.props = {
-    title: 'Factura',
-    panelName: 'Factura',
-    fieldsJson: headerFields(),
-    columna: 1,
-    labelWidth: 140,
-    labelValueGap: 8,
-    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  // Replica estructural de FacturaFormatoSeisAmazonas (orden document.Add):
+  // Header {20,30,20} → Body {2,2,1.5,2} → Body2 {2,2,3.5} → CUFE → ítems →
+  // UnitTotal → Footer {4,2} → valor letras → pie FE (+ anexo salud demo)
+
+  const small9 = { ...defaultValueStyle(), fontSizePx: 9, bold: false }
+  const small8 = { ...defaultValueStyle(), fontSizePx: 8, bold: false }
+  const title10 = {
+    ...defaultTitleStyle(),
+    color: '#111111',
+    fontSizePx: 10,
   }
 
-  const autorizacion = createBlock('datos')
-  autorizacion.props = {
-    title: 'Autorización DIAN',
-    panelName: 'Autorización DIAN',
-    fieldsJson: autorizacionFields(),
-    columna: 1,
-    labelWidth: 160,
-    labelValueGap: 8,
-    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  // —— Header {20, 30, 20}: logo | empresa | tipo+LegalNumber ——
+  const logo = createBlock('texto')
+  logo.props = {
+    content:
+      '@@html:<div class="logo-box">LOGO<br/><small>{{emisor.razonSocial}}</small></div>',
+    cellAlign: 'centro',
+    contentStyleJson: stringifyTextStyle(defaultBodyStyle()),
   }
 
-  const emisor = createBlock('datos')
-  emisor.props = {
-    title: 'Emisor',
-    panelName: 'Emisor',
-    fieldsJson: emisorFields(),
-    columna: 1,
-    labelWidth: 140,
-    labelValueGap: 8,
-    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
-  }
-
-  const cliente = createBlock('datos')
-  cliente.props = {
-    title: 'Cliente',
-    panelName: 'Cliente',
-    fieldsJson: clienteFields(),
-    columna: 2,
-    labelWidth: 140,
-    labelValueGap: 8,
-    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
-  }
-
-  const top = createBlock('contenedor')
-  top.props = {
+  const empresa = createBlock('datos')
+  empresa.props = {
     title: '',
-    columns: 2,
-    padding: 16,
+    panelName: 'Razón social del vendedor',
+    sourceTagId: 'emisor-razon',
+    cellAlign: 'centro',
+    presentation: 'stack',
+    fieldsJson: stringifyDatosFields([
+      fieldFromTag('emisor-razon', {
+        label: '',
+        valueStyle: {
+          ...defaultValueStyle(),
+          fontSizePx: 10,
+          bold: true,
+          align: 'centro',
+        },
+      }),
+      fieldFromTag('emisor-nit', {
+        label: 'NIT',
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: 9, bold: true },
+        valueStyle: { ...small9, align: 'centro' },
+      }),
+      fieldFromTag('emisor-responsabilidad', {
+        label: '',
+        valueStyle: { ...small8, align: 'centro', fontSizePx: 7 },
+      }),
+      fieldFromTag('emisor-telefono', {
+        label: 'TEL',
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: 9, bold: true },
+        valueStyle: { ...small9, align: 'centro' },
+      }),
+      fieldFromTag('emisor-direccion', {
+        label: '',
+        valueStyle: { ...small9, align: 'centro' },
+      }),
+      fieldFromTag('emisor-email', {
+        label: '',
+        valueStyle: { ...small9, align: 'centro' },
+      }),
+    ]),
+    labelWidth: 40,
+    labelValueGap: 2,
+    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  }
+
+  // Tipo de documento + número = etiquetas DIAN (doc-tipo / doc-numero), no texto quemado
+  const legalNum = createBlock('datos')
+  legalNum.props = {
+    title: '',
+    panelName: 'Tipo de documento',
+    sourceTagId: 'doc-tipo',
+    cellAlign: 'centro',
+    presentation: 'stack',
+    fieldsJson: stringifyDatosFields([
+      fieldFromTag('doc-tipo', {
+        label: '',
+        valueStyle: {
+          ...defaultValueStyle(),
+          fontSizePx: 9,
+          bold: true,
+          align: 'centro',
+        },
+      }),
+      fieldFromTag('doc-numero', {
+        label: '',
+        valueStyle: {
+          ...defaultValueStyle(),
+          fontSizePx: 11,
+          bold: true,
+          align: 'centro',
+        },
+      }),
+    ]),
+    labelWidth: 40,
+    labelValueGap: 2,
+    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  }
+
+  const header = createBlock('contenedor')
+  header.props = {
+    title: '',
+    columnWidths: '20,30,20',
+    padding: 2,
     border: false,
     background: '#ffffff',
-    align: 'izquierda',
     titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
   }
-  top.children = [emisor, cliente]
+  header.children = [logo, empresa, legalNum]
 
-  const tabla = createBlock('tabla')
-  const totales = createBlock('datos')
-  totales.props = {
-    title: 'Totales e impuestos',
-    panelName: 'Totales',
-    fieldsJson: totalesFields(),
-    columna: 1,
-    labelWidth: 160,
-    labelValueGap: 8,
-    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  // —— Body {2, 2, 1.5, 2}: SEÑORES | dirección | fechas | QR ——
+  const senores1 = createBlock('datos')
+  senores1.props = {
+    title: 'SEÑORES',
+    panelName: 'Cliente',
+    cellAlign: 'izquierda',
+    presentation: 'stack',
+    boxBorder: true,
+    boxRadius: 8,
+    boxPadding: 6,
+    boxBorderColor: '#888888',
+    fieldsJson: senoresLeftFields(),
+    labelWidth: 120,
+    labelValueGap: 2,
+    titleStyleJson: stringifyTextStyle(title10),
   }
 
-  const pago = createBlock('datos')
-  pago.props = {
-    title: 'Pago',
-    panelName: 'Pago',
-    fieldsJson: pagoFields(),
-    columna: 1,
-    labelWidth: 140,
-    labelValueGap: 8,
-    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  const senores2 = createBlock('datos')
+  senores2.props = {
+    title: '',
+    panelName: 'Dirección',
+    cellAlign: 'izquierda',
+    presentation: 'stack',
+    boxBorder: true,
+    boxRadius: 8,
+    boxPadding: 6,
+    boxBorderColor: '#888888',
+    fieldsJson: senoresRightFields(),
+    labelWidth: 120,
+    labelValueGap: 2,
+    titleStyleJson: stringifyTextStyle(title10),
   }
 
-  const software = createBlock('datos')
-  software.props = {
-    title: 'Software',
-    panelName: 'Software',
-    fieldsJson: softwareFields(),
-    columna: 1,
-    labelWidth: 180,
-    labelValueGap: 8,
+  const fechas = createBlock('datos')
+  fechas.props = {
+    title: '',
+    panelName: 'Fechas',
+    cellAlign: 'izquierda',
+    presentation: 'stack',
+    fieldsJson: stringifyDatosFields([
+      fieldFromTag('doc-fecha-generacion', {
+        label: 'Fecha de generación',
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: 8, bold: true },
+        valueStyle: small8,
+      }),
+      fieldFromTag('doc-hora-generacion', {
+        label: 'Hora de generación',
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: 8, bold: true },
+        valueStyle: small8,
+      }),
+      createDatosField({
+        label: 'Fecha Validación Dian',
+        mode: 'campo',
+        value: 'factura.fechaValidacionDian',
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: 8, bold: true },
+        valueStyle: small8,
+      }),
+    ]),
+    labelWidth: 120,
+    labelValueGap: 2,
     titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
   }
 
   const qr = createBlock('imagen')
   qr.props = {
     srcPath: 'documento.qrUrl',
-    width: 120,
-    height: 120,
-    align: 'izquierda',
     tagId: 'qr',
-    columna: 1,
+    width: 80,
+    height: 80,
+    align: 'centro',
+    cellAlign: 'centro',
+    cellVAlign: 'centro',
   }
 
-  const nota = createBlock('texto')
-  nota.props = {
-    content: 'Documento electrónico generado para demo BTW Template Studio.',
-    columna: 1,
-    contentStyleJson: stringifyTextStyle(defaultBodyStyle()),
+  const body = createBlock('contenedor')
+  body.props = {
+    title: '',
+    columnWidths: '2,2,1.5,2',
+    padding: 0,
+    border: false,
+    background: '#ffffff',
+    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  }
+  body.children = [senores1, senores2, fechas, qr]
+
+  // —— Body2 {2, 2, 3.5}: info factura | pedido | resolución ——
+  const infoFactura = createBlock('datos')
+  infoFactura.props = {
+    title: 'INFORMACIÓN FACTURA',
+    panelName: 'Información factura',
+    cellAlign: 'izquierda',
+    presentation: 'stack',
+    fieldsJson: stringifyDatosFields([
+      createDatosField({
+        label: 'Fecha Factura',
+        mode: 'campo',
+        value: 'factura.fecha',
+        format: 'fecha',
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: 8, bold: true },
+        valueStyle: small8,
+      }),
+      createDatosField({
+        label: 'Fecha Vencimiento',
+        mode: 'campo',
+        value: 'factura.fechaVencimiento',
+        format: 'fecha',
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: 8, bold: true },
+        valueStyle: small8,
+      }),
+      fieldFromTag('pago-forma', {
+        label: 'Forma de Pago',
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: 8, bold: true },
+        valueStyle: small8,
+      }),
+      fieldFromTag('pago-medio', {
+        label: 'Medio de Pago',
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: 8, bold: true },
+        valueStyle: small8,
+      }),
+    ]),
+    labelWidth: 110,
+    labelValueGap: 2,
+    titleStyleJson: stringifyTextStyle(title10),
   }
 
-  const espacio = createBlock('espacio')
+  const infoPedido = createBlock('datos')
+  infoPedido.props = {
+    title: '',
+    panelName: 'Pedido',
+    cellAlign: 'izquierda',
+    presentation: 'stack',
+    fieldsJson: stringifyDatosFields([
+      createDatosField({
+        label: 'Nro Pedido',
+        mode: 'campo',
+        value: 'factura.nroPedido',
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: 8, bold: true },
+        valueStyle: small8,
+      }),
+      createDatosField({
+        label: 'Línea de negocio',
+        mode: 'campo',
+        value: 'factura.lineaNegocio',
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: 8, bold: true },
+        valueStyle: small8,
+      }),
+    ]),
+    labelWidth: 110,
+    labelValueGap: 2,
+    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  }
+
+  const resolucion = createBlock('datos')
+  resolucion.props = {
+    title: '',
+    panelName: 'Autorización DIAN',
+    sourceTagId: 'doc-autorizacion',
+    cellAlign: 'izquierda',
+    presentation: 'stack',
+    fieldsJson: autorizacionFields(),
+    labelWidth: 130,
+    labelValueGap: 2,
+    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  }
+
+  const body2 = createBlock('contenedor')
+  body2.props = {
+    title: '',
+    columnWidths: '2,2,3.5',
+    padding: 0,
+    border: false,
+    background: '#ffffff',
+    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  }
+  body2.children = [infoFactura, infoPedido, resolucion]
+
+  // —— CUFE fila completa ——
+  const cufe = createBlock('datos')
+  cufe.props = {
+    title: '',
+    panelName: 'CUFE',
+    sourceTagId: 'cufe',
+    cellAlign: 'izquierda',
+    presentation: 'fiscal',
+    fieldsJson: stringifyDatosFields([
+      fieldFromTag('cufe', {
+        label: 'CUFE',
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: 9, bold: true },
+        valueStyle: { ...defaultValueStyle(), fontSizePx: 7, bold: false },
+      }),
+    ]),
+    labelWidth: 40,
+    labelValueGap: 2,
+    titleStyleJson: stringifyTextStyle(title10),
+  }
+
+  // —— Ítems 9 cols ——
+  const tabla = createBlock('tabla')
+  tabla.props = {
+    arrayPath: 'items',
+    columnsJson: defaultTableColumns(),
+    cellAlign: 'izquierda',
+  }
+
+  const totalItems = createBlock('datos')
+  totalItems.props = {
+    title: '',
+    panelName: 'Total items',
+    cellAlign: 'izquierda',
+    presentation: 'stack',
+    fieldsJson: stringifyDatosFields([
+      createDatosField({
+        label: 'Total Items',
+        mode: 'campo',
+        value: 'totales.totalItems',
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: 9, bold: true },
+        valueStyle: { ...defaultValueStyle(), fontSizePx: 9, bold: true },
+      }),
+    ]),
+    labelWidth: 80,
+    labelValueGap: 4,
+    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  }
+
+  // —— Footer {4, 2}: observaciones | totales ——
+  const observaciones = createBlock('datos')
+  observaciones.props = {
+    title: 'OBSERVACIONES',
+    panelName: 'Observaciones',
+    cellAlign: 'izquierda',
+    presentation: 'stack',
+    boxBorder: true,
+    boxRadius: 8,
+    boxPadding: 6,
+    boxBorderColor: '#888888',
+    fieldsJson: stringifyDatosFields([
+      createDatosField({
+        label: '',
+        mode: 'campo',
+        value: 'observaciones',
+        valueStyle: small8,
+      }),
+    ]),
+    labelWidth: 40,
+    labelValueGap: 2,
+    titleStyleJson: stringifyTextStyle({
+      ...defaultTitleStyle(),
+      color: '#111111',
+      fontSizePx: 9,
+    }),
+  }
+
+  const totales = createBlock('datos')
+  totales.props = {
+    title: '',
+    panelName: 'Totales',
+    cellAlign: 'derecha',
+    presentation: 'totales',
+    fieldsJson: totalesFields(),
+    labelWidth: 110,
+    labelValueGap: 2,
+    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  }
+
+  const footer = createBlock('contenedor')
+  footer.props = {
+    title: '',
+    columnWidths: '4,2',
+    padding: 0,
+    border: false,
+    background: '#ffffff',
+    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  }
+  footer.children = [observaciones, totales]
+
+  const valorLetras = createBlock('datos')
+  valorLetras.props = {
+    title: '',
+    panelName: 'Valor en letras',
+    cellAlign: 'izquierda',
+    presentation: 'stack',
+    fieldsJson: stringifyDatosFields([
+      createDatosField({
+        label: 'SON',
+        mode: 'campo',
+        value: 'totales.valorEnLetras',
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: 9, bold: true },
+        valueStyle: { ...small9, bold: true },
+      }),
+    ]),
+    labelWidth: 40,
+    labelValueGap: 2,
+    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  }
+
+  const pie = createBlock('datos')
+  pie.props = {
+    title: '',
+    panelName: 'Software / PT',
+    sourceTagId: 'software-fabricante',
+    cellAlign: 'centro',
+    presentation: 'stack',
+    fieldsJson: stringifyDatosFields([
+      fieldFromTag('software-fabricante', {
+        label: 'Fabricante del software',
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: 7, bold: true },
+        valueStyle: { ...small8, fontSizePx: 7, align: 'centro' },
+      }),
+      fieldFromTag('software-fabricante-nit', {
+        label: 'NIT fabricante',
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: 7, bold: true },
+        valueStyle: { ...small8, fontSizePx: 7, align: 'centro' },
+      }),
+      fieldFromTag('software-nombre', {
+        label: 'Software',
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: 7, bold: true },
+        valueStyle: { ...small8, fontSizePx: 7, align: 'centro' },
+      }),
+      fieldFromTag('software-proveedor', {
+        label: 'Proveedor tecnológico',
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: 7, bold: true },
+        valueStyle: { ...small8, fontSizePx: 7, align: 'centro' },
+      }),
+    ]),
+    labelWidth: 140,
+    labelValueGap: 2,
+    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+  }
+
+  // Como FE: NewPage + landscape → anexo salud en tablas
+  const saltoAnexo = createBlock('salto')
+  saltoAnexo.props = { orientation: 'horizontal' }
+
+  const anexoTitulo = createBlock('texto')
+  anexoTitulo.props = {
+    content: 'Anexo para sector salud',
+    cellAlign: 'izquierda',
+    contentStyleJson: stringifyTextStyle({
+      ...defaultTitleStyle(),
+      fontSizePx: 10,
+      bold: true,
+    }),
+  }
+
+  const anexoCabecera = createBlock('tabla')
+  anexoCabecera.props = {
+    arrayPath: 'anexoSalud.cabecera',
+    columnsJson: anexoCabeceraColumns(),
+    cellAlign: 'izquierda',
+    cellVAlign: 'arriba',
+    boxBorder: false,
+    boxRadius: 0,
+    boxPadding: 0,
+  }
+
+  const anexoPacientes = createBlock('tabla')
+  anexoPacientes.props = {
+    arrayPath: 'anexoSalud.pacientes',
+    columnsJson: anexoPacientesColumns(),
+    cellAlign: 'izquierda',
+    cellVAlign: 'arriba',
+    boxBorder: false,
+    boxRadius: 0,
+    boxPadding: 0,
+  }
+
+  const gap = (size: number) => {
+    const e = createBlock('espacio')
+    e.props = { size, cellAlign: 'izquierda' }
+    return e
+  }
 
   return [
     header,
-    autorizacion,
-    top,
-    espacio,
+    gap(8),
+    body,
+    body2,
+    cufe,
+    gap(6),
     tabla,
-    totales,
-    pago,
-    software,
-    qr,
-    nota,
+    totalItems,
+    gap(6),
+    footer,
+    gap(4),
+    valorLetras,
+    pie,
+    saltoAnexo,
+    anexoTitulo,
+    gap(4),
+    anexoCabecera,
+    gap(4),
+    anexoPacientes,
   ]
 }
 
@@ -445,13 +1057,29 @@ export function clampColumn(column: number, maxColumns: number): number {
 }
 
 export function isChildAllowedInContainer(type: BlockType): boolean {
-  return type !== 'contenedor'
+  return type !== 'contenedor' && type !== 'salto'
 }
 
-/** Editor-only label for Datos blocks: "Cliente - Datos". Not rendered in PDF. */
-export function datosPanelHeading(panelName: unknown): string {
+/** Editor-only label for Datos blocks. Etiquetas DIAN keep their catalog name. */
+export function datosPanelHeading(
+  panelName: unknown,
+  options?: { fromEtiqueta?: boolean },
+): string {
   const name = String(panelName ?? '').trim()
+  if (options?.fromEtiqueta) {
+    return name ? `Etiqueta · ${name}` : 'Etiqueta DIAN'
+  }
   return name ? `${name} - Datos` : 'Datos'
 }
 
-export { stringifyTextStyle, parseTextStyleJson }
+export {
+  fieldFromTag,
+  clienteFields,
+  emisorFields,
+  headerFields,
+  autorizacionFields,
+  pagoFields,
+  softwareFields,
+  stringifyTextStyle,
+  parseTextStyleJson,
+}
