@@ -34,6 +34,7 @@ import {
   BLOCK_CATALOG,
   createBlock,
   createDatosField,
+  datosPanelHeading,
   getBlockContentStyle,
   getBlockTitleStyle,
   isChildAllowedInContainer,
@@ -167,7 +168,11 @@ function SortableRow({
       <div className={styles.blockBody}>
         <div className={styles.blockTitle}>
           <Icon size={16} />
-          <strong>{catalog?.label ?? block.type}</strong>
+          <strong>
+            {block.type === 'datos'
+              ? datosPanelHeading(block.props.panelName)
+              : (catalog?.label ?? block.type)}
+          </strong>
         </div>
         <p>{summarize(block)}</p>
       </div>
@@ -401,7 +406,6 @@ function PropsPanel({
   if (selected.type === 'datos') {
     return (
       <div className={styles.props}>
-        <h3>Datos</h3>
         <DatosFieldsEditor
           block={selected}
           sampleDataJson={sampleDataJson}
@@ -727,6 +731,7 @@ export function VisualBuilder({
     datos.props = {
       ...datos.props,
       title: label.label,
+      panelName: label.label,
       fieldsJson: stringifyDatosFields([field]),
     }
     insertBlockAtOver(datos, overId, 'datos')
@@ -914,13 +919,38 @@ export function VisualBuilder({
             onClick={(event) => event.stopPropagation()}
           >
             <header className={styles.propsDialogHeader}>
-              <div>
+              <div className={styles.propsDialogTitleWrap}>
                 <p className={styles.propsDialogEyebrow}>Propiedades</p>
-                <h3>
-                  {BLOCK_CATALOG.find(
-                    (item) => item.type === selectedInfo.block.type,
-                  )?.label ?? 'Bloque'}
-                </h3>
+                {selectedInfo.block.type === 'datos' ? (
+                  <div className={styles.panelNameRow}>
+                    <input
+                      className={styles.panelNameInput}
+                      type="text"
+                      value={String(selectedInfo.block.props.panelName ?? '')}
+                      placeholder="Nombre"
+                      aria-label="Nombre del bloque de datos"
+                      onChange={(event) => {
+                        const panelName = event.target.value
+                        onChange(
+                          updateTree(blocks, selectedInfo.block.id, (block) => ({
+                            ...block,
+                            props: { ...block.props, panelName },
+                          })),
+                        )
+                      }}
+                    />
+                    <span className={styles.panelNameSuffix} aria-hidden="true">
+                      {' '}
+                      - Datos
+                    </span>
+                  </div>
+                ) : (
+                  <h3>
+                    {BLOCK_CATALOG.find(
+                      (item) => item.type === selectedInfo.block.type,
+                    )?.label ?? 'Bloque'}
+                  </h3>
+                )}
               </div>
               <button
                 type="button"

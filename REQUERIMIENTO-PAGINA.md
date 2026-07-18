@@ -48,7 +48,8 @@ La paleta sigue siendo solo: Contenedor, Datos, Tabla, Texto, Espacio.
 
 - **4 lados independientes** en mm: superior, inferior, izquierdo, derecho.
 - **Sin padding de página** (solo márgenes).
-- Default: **15 mm** en los cuatro lados.
+- Default: **5 mm** en los cuatro lados.
+- El cliente puede modificar cada lado en el panel Documento.
 
 ---
 
@@ -66,7 +67,7 @@ La paleta sigue siendo solo: Contenedor, Datos, Tabla, Texto, Espacio.
 |---|---|
 | Tamaño | **Carta** |
 | Orientación | **Vertical** |
-| Márgenes | **15 mm** (4 lados) |
+| Márgenes | **5 mm** (4 lados, editables) |
 | Fondo | `#ffffff` |
 
 ---
@@ -129,7 +130,7 @@ Ejemplo orientativo (valores dinámicos):
 ```css
 @page {
   size: 216mm 279mm; /* Carta vertical */
-  margin: 15mm 15mm 15mm 15mm; /* top right bottom left */
+  margin: 5mm 5mm 5mm 5mm; /* top right bottom left */
 }
 
 html, body {
@@ -144,7 +145,7 @@ html, body {
   width: 216mm;
   min-height: 279mm;
   box-sizing: border-box;
-  padding: 15mm 15mm 15mm 15mm;
+  padding: 5mm 5mm 5mm 5mm;
   background: #ffffff;
 }
 ```
@@ -165,7 +166,7 @@ html, body {
 6. UI fija arriba en panel Documento  
 7. Fondo color editable  
 8. Preview tamaño real + `@page` en HTML  
-9. Default: Carta vertical, márgenes 15 mm, blanco  
+9. Default: Carta vertical, márgenes 5 mm, blanco  
 10. Persistencia en CSS; CSS embebido en HTML  
 11. Reabrir = parsear CSS  
 12. Oficio CO y Legal ambos en selector  
@@ -183,7 +184,7 @@ html, body {
 - [x] CSS generado incluye `@page` + estilos de página en mm  
 - [x] Descargar HTML incluye CSS embebido (no depende de archivo .css externo)  
 - [x] Reabrir borrador rehidrata panel desde CSS (o defaults si falla)  
-- [x] Defaults: Carta vertical, 15 mm, `#ffffff`  
+- [x] Defaults: Carta vertical, 5 mm, `#ffffff`  
 - [x] No aparece “Página” en la paleta DnD  
 
 ---

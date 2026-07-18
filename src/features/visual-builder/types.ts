@@ -248,6 +248,7 @@ export const BLOCK_CATALOG: {
     description: 'Filas con texto o campos del JSON',
     defaults: {
       title: 'Datos',
+      panelName: '',
       fieldsJson: stringifyDatosFields([
         createDatosField({ label: 'Campo', mode: 'texto', value: '' }),
       ]),
@@ -318,6 +319,7 @@ export function createDefaultFacturaBlocks(): TemplateBlock[] {
   const header = createBlock('datos')
   header.props = {
     title: 'Factura',
+    panelName: 'Factura',
     fieldsJson: headerFields(),
     columna: 1,
     labelWidth: 140,
@@ -328,6 +330,7 @@ export function createDefaultFacturaBlocks(): TemplateBlock[] {
   const autorizacion = createBlock('datos')
   autorizacion.props = {
     title: 'Autorización DIAN',
+    panelName: 'Autorización DIAN',
     fieldsJson: autorizacionFields(),
     columna: 1,
     labelWidth: 160,
@@ -338,6 +341,7 @@ export function createDefaultFacturaBlocks(): TemplateBlock[] {
   const emisor = createBlock('datos')
   emisor.props = {
     title: 'Emisor',
+    panelName: 'Emisor',
     fieldsJson: emisorFields(),
     columna: 1,
     labelWidth: 140,
@@ -348,6 +352,7 @@ export function createDefaultFacturaBlocks(): TemplateBlock[] {
   const cliente = createBlock('datos')
   cliente.props = {
     title: 'Cliente',
+    panelName: 'Cliente',
     fieldsJson: clienteFields(),
     columna: 2,
     labelWidth: 140,
@@ -371,6 +376,7 @@ export function createDefaultFacturaBlocks(): TemplateBlock[] {
   const totales = createBlock('datos')
   totales.props = {
     title: 'Totales e impuestos',
+    panelName: 'Totales',
     fieldsJson: totalesFields(),
     columna: 1,
     labelWidth: 160,
@@ -381,6 +387,7 @@ export function createDefaultFacturaBlocks(): TemplateBlock[] {
   const pago = createBlock('datos')
   pago.props = {
     title: 'Pago',
+    panelName: 'Pago',
     fieldsJson: pagoFields(),
     columna: 1,
     labelWidth: 140,
@@ -391,6 +398,7 @@ export function createDefaultFacturaBlocks(): TemplateBlock[] {
   const software = createBlock('datos')
   software.props = {
     title: 'Software',
+    panelName: 'Software',
     fieldsJson: softwareFields(),
     columna: 1,
     labelWidth: 180,
@@ -438,6 +446,12 @@ export function clampColumn(column: number, maxColumns: number): number {
 
 export function isChildAllowedInContainer(type: BlockType): boolean {
   return type !== 'contenedor'
+}
+
+/** Editor-only label for Datos blocks: "Cliente - Datos". Not rendered in PDF. */
+export function datosPanelHeading(panelName: unknown): string {
+  const name = String(panelName ?? '').trim()
+  return name ? `${name} - Datos` : 'Datos'
 }
 
 export { stringifyTextStyle, parseTextStyleJson }

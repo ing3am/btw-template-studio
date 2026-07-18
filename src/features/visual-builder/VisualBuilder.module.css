@@ -336,10 +336,53 @@
   color: var(--color-muted);
 }
 
+.propsDialogTitleWrap {
+  min-width: 0;
+  flex: 1;
+}
+
 .propsDialogHeader h3 {
   margin: 0;
   font-family: var(--font-display);
   font-size: 1.15rem;
+}
+
+.panelNameRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.panelNameInput {
+  min-width: 0;
+  flex: 1;
+  max-width: 14rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0.15rem 0.35rem;
+  margin: 0 0 0 -0.35rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  background: transparent;
+}
+
+.panelNameInput:hover,
+.panelNameInput:focus {
+  border-color: var(--color-line);
+  background: var(--color-surface);
+  outline: none;
+}
+
+.panelNameSuffix {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-muted);
+  white-space: nowrap;
 }
 
 .propsClose {
