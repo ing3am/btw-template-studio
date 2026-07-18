@@ -37,6 +37,17 @@ jobs:
             echo "=== write nginx? ==="
             touch /etc/nginx/testwrite 2>&1
             rm -f /etc/nginx/testwrite 2>&1
+
+            echo "=== docker ==="
+            docker ps --format 'table {{.Names}}	{{.Ports}}	{{.Image}}' 2>&1 | head -40
+            docker info 2>&1 | head -5
+            echo "=== can bind ports? ==="
+            ss -tlnp 2>/dev/null | head -30 || netstat -tlnp 2>/dev/null | head -30
+            echo "=== home writable docker test ==="
+            mkdir -p "$HOME/btw-auth-proxy"
+            echo ok > "$HOME/btw-auth-proxy/probe.txt"
+            ls -la "$HOME/btw-auth-proxy"
+
             echo "=== curl upstream ==="
             curl -sS -D - -o /tmp/up.txt -X POST 'https://test-apiconnect.febtw.co/auth/Authentication' -H 'user: x' -H 'password: y' --data-binary '' | head -20
             echo "=== cors probe ==="

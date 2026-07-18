@@ -58,20 +58,18 @@ jobs:
           overwrite: true
 
       - name: Upload nginx auth proxy script
-        continue-on-error: true
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           password: ${{ secrets.DEPLOY_PASSWORD }}
           port: 22
-          source: scripts/ensure-nginx-auth-proxy.sh
+          source: scripts/ensure-nginx-auth-proxy-docker.sh
           target: /tmp/btw-deploy
           strip_components: 1
           overwrite: true
 
-      - name: Configure nginx /api-auth proxy
-        continue-on-error: true
+      - name: Configure nginx /api-auth proxy via Docker
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -82,9 +80,9 @@ jobs:
             set -e
             SCRIPT=""
             for candidate in \
-              /tmp/btw-deploy/ensure-nginx-auth-proxy.sh \
-              /tmp/ensure-nginx-auth-proxy.sh \
-              /tmp/btw-deploy/scripts/ensure-nginx-auth-proxy.sh
+              /tmp/btw-deploy/ensure-nginx-auth-proxy-docker.sh \
+              /tmp/btw-deploy/scripts/ensure-nginx-auth-proxy-docker.sh \
+              /tmp/ensure-nginx-auth-proxy-docker.sh
             do
               if [ -f "$candidate" ]; then
                 SCRIPT="$candidate"
@@ -92,15 +90,10 @@ jobs:
               fi
             done
             if [ -z "$SCRIPT" ]; then
-              echo "ensure-nginx-auth-proxy.sh not found under /tmp" >&2
+              echo "docker nginx proxy script not found" >&2
               find /tmp/btw-deploy -type f 2>/dev/null || true
-              ls -la /tmp/btw-deploy 2>/dev/null || true
               exit 1
             fi
             chmod +x "$SCRIPT"
             export DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}"
-            export SUDO_PASSWORD="${{ secrets.DEPLOY_PASSWORD }}"
-            bash "$SCRIPT" || {
-              echo "::warning::nginx /api-auth proxy not applied (needs root). Static deploy is OK."
-              exit 0
-            }
+            bash "$SCRIPT"
