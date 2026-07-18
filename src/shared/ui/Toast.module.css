@@ -1,0 +1,33 @@
+.viewport {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 50;
+  display: grid;
+  gap: 0.55rem;
+  width: min(22rem, calc(100vw - 2rem));
+}
+
+.toast {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  animation: toastIn var(--motion-base) var(--ease-out) both;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.success {
+  background: var(--color-accent);
+  color: #fffcf7;
+}
+
+.error {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.info {
+  background: var(--color-ink);
+  color: #fffcf7;
+}

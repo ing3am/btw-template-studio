@@ -1,0 +1,86 @@
+.panel {
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-bg-accent);
+}
+
+.toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  border: 0;
+  background: transparent;
+  padding: 0.65rem 0.85rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.toggleMain {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.toggleMain strong {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--color-ink);
+}
+
+.meta {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  flex-shrink: 0;
+  width: 1.4rem;
+  height: 1.4rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.35rem;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.body {
+  padding: 0 0.85rem 0.85rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem 0.55rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.field span {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.field input,
+.field select {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.5rem;
+  background: #fff;
+  font-size: 0.8rem;
+}
+
+.field input[type='color'] {
+  padding: 0.15rem;
+  height: 2rem;
+}

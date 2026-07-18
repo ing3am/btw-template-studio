@@ -1,0 +1,108 @@
+.wrap {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.field span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.field input,
+.field select {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.65rem;
+  background: var(--color-surface);
+}
+
+.listHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.layoutRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.listHeader h4 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.addBtn,
+.removeBtn {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.addBtn {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.removeBtn {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  justify-self: start;
+}
+
+.row {
+  display: grid;
+  gap: 0;
+  padding: 0;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  overflow: hidden;
+}
+
+.accordionToggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  border: 0;
+  background: var(--color-bg-accent);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.accordionTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.accordionBody {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.7rem;
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+}

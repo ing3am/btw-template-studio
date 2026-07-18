@@ -1,0 +1,357 @@
+.builder {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  gap: 0;
+  min-height: 0;
+  height: 100%;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-sm);
+}
+
+.palette {
+  min-height: 0;
+  padding: 1.1rem 1rem;
+  overflow: auto;
+  border-right: 1px solid var(--color-line);
+  background: rgba(255, 251, 245, 0.96);
+}
+
+.palette h3,
+.canvasHeader h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+
+.hint {
+  margin: 0.35rem 0 0.85rem;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.paletteList {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.paletteItem {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  text-align: left;
+  width: 100%;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  padding: 0.7rem;
+  cursor: grab;
+  transition: border-color var(--motion-fast) var(--ease-out),
+    background var(--motion-fast) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out);
+}
+
+.paletteItem:hover {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  transform: translateY(-1px);
+}
+
+.paletteItem strong {
+  display: block;
+  font-size: 0.85rem;
+}
+
+.paletteItem small {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.paletteIcon {
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 0.45rem;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.canvas {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.canvasHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-bg-accent);
+}
+
+.canvasHeader span {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.canvasList {
+  padding: 0.75rem;
+  overflow: auto;
+  display: grid;
+  gap: 0.55rem;
+  align-content: start;
+}
+
+.emptyCanvas {
+  border: 1px dashed var(--color-line);
+  border-radius: var(--radius);
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--color-muted);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.block {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.45rem;
+  align-items: start;
+  padding: 0.7rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  cursor: pointer;
+}
+
+.blockNested {
+  margin-left: 0;
+  background: #fff8ee;
+}
+
+.containerChildren {
+  margin: 0.35rem 0 0.75rem 1.4rem;
+  padding: 0.55rem;
+  border: 1px dashed var(--color-line);
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: 0.45rem;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.containerHint {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 0.7rem;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--color-ink);
+}
+
+.field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.field span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.field input,
+.field select,
+.field textarea {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.65rem;
+  background: var(--color-surface);
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.overlayChip {
+  padding: 0.55rem 0.85rem;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: #fffcf7;
+  font-weight: 600;
+  box-shadow: var(--shadow);
+}
+
+.blockTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-accent);
+}
+
+.blockBody p {
+  margin: 0.25rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.grip,
+.remove {
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  padding: 0.2rem;
+  cursor: pointer;
+  border-radius: 0.35rem;
+}
+
+.grip {
+  cursor: grab;
+}
+
+.remove:hover {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.props {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.props > h3 {
+  display: none;
+}
+
+.props p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.propsBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(28, 20, 18, 0.42);
+  animation: propsFadeIn var(--motion-fast) var(--ease-out);
+}
+
+.propsDialog {
+  width: min(440px, 100%);
+  max-height: min(82vh, 720px);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border-radius: var(--radius);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--color-line);
+  overflow: hidden;
+  animation: propsSlideIn var(--motion-fast) var(--ease-out);
+}
+
+.propsDialogHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-bg-accent);
+}
+
+.propsDialogEyebrow {
+  margin: 0 0 0.15rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.propsDialogHeader h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+}
+
+.propsClose {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.propsClose:hover {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.propsDialogBody {
+  padding: 1rem;
+  overflow: auto;
+}
+
+@keyframes propsFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes propsSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .propsBackdrop,
+  .propsDialog {
+    animation: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  .builder {
+    grid-template-columns: 150px minmax(0, 1fr);
+  }
+
+  .propsDialog {
+    width: min(100%, 420px);
+  }
+}

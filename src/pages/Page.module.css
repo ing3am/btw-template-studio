@@ -1,0 +1,132 @@
+.page {
+  max-width: 1100px;
+}
+
+.header,
+.headerRow {
+  margin-bottom: 1.5rem;
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.eyebrow {
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.header h1,
+.headerRow h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+}
+
+.lead {
+  margin: 0.55rem 0 0;
+  color: var(--color-muted);
+  max-width: 40rem;
+  line-height: 1.5;
+}
+
+.list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.item,
+.panel,
+.panelMuted {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.1rem 1.2rem;
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  animation: fadeRise var(--motion-base) var(--ease-out) both;
+  transition: transform var(--motion-fast) var(--ease-out);
+}
+
+.item:hover {
+  transform: translateY(-2px);
+}
+
+.itemTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.3rem;
+}
+
+.item h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.item p {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.65rem 0.95rem;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: #fffcf7;
+  font-weight: 600;
+  transition: background var(--motion-fast) var(--ease-out);
+}
+
+.action:hover {
+  background: var(--color-accent-hover);
+}
+
+.panel p {
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.panelMuted {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--color-muted);
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .headerRow {
+    flex-direction: column;
+  }
+
+  .item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

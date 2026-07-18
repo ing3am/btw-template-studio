@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@500;600;700&display=swap');
+
+:root {
+  /* Marfil / hueso */
+  --color-bg: #f3eee4;
+  --color-bg-accent: #ebe4d6;
+  --color-surface: #fffbf5;
+  --color-surface-elevated: #fffcf7;
+  --color-ink: #1c1412;
+  --color-muted: #7a6b62;
+  --color-line: #e0d6c8;
+
+  /* Marca */
+  --color-accent: #f94c10;
+  --color-accent-hover: #d93f0a;
+  --color-accent-soft: #ffe4d8;
+  --color-brand-deep: #c70039;
+
+  --color-warning: #b45309;
+  --color-warning-soft: #fff1db;
+  --color-danger: #c70039;
+  --color-danger-soft: #fde8ee;
+
+  --font-display: 'Outfit', 'Segoe UI', sans-serif;
+  --font-body: 'DM Sans', 'Segoe UI', sans-serif;
+
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --shadow: 0 14px 40px rgba(28, 20, 18, 0.09);
+  --shadow-sm: 0 4px 14px rgba(28, 20, 18, 0.06);
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --icon-sm: 16px;
+  --icon-md: 18px;
+  --icon-lg: 22px;
+  --motion-fast: 160ms;
+  --motion-base: 280ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+  }
+}

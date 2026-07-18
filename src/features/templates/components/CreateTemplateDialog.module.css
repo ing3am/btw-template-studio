@@ -1,0 +1,58 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(28, 20, 18, 0.35);
+  backdrop-filter: blur(4px);
+  animation: fadeRise var(--motion-fast) var(--ease-out) both;
+}
+
+.dialog {
+  width: min(28rem, 100%);
+  padding: 1.35rem;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 0.85rem;
+}
+
+.dialog h2 {
+  margin: 0;
+  font-family: var(--font-display);
+}
+
+.dialog p {
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.45;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.field span {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.field input,
+.field select {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.75rem;
+  background: var(--color-surface);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
