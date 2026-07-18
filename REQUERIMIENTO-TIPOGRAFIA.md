@@ -40,11 +40,12 @@ Por cada unidad de texto:
 | **Alineación** | izq / centro / der | `text-align: left\|center\|right` |
 
 ### 2.1 Tamaño (fidelidad PDF)
-- Presets solo como atajos; **siempre** se guardan como px:
-  - Pequeño → `12px`
-  - Normal → `14px`
-  - Grande → `18px`
-  - Título → `24px`
+- Presets solo como atajos; **siempre** se guardan como px.
+- Escala densa (factura impresa): ver **`REQUERIMIENTO-MEDIDAS.md`**
+  - Pequeño → `8px`
+  - Normal → `9px`
+  - Grande → `11px`
+  - Título → `12px`
 - Opción **Personalizado**: input numérico en px.
 - El HTML/PDF nunca depende de nombres de preset; solo de `font-size` en px.
 
@@ -53,7 +54,7 @@ Por cada unidad de texto:
 ```ts
 type TextStyle = {
   color: string       // "#14201a"
-  fontSizePx: number  // 14
+  fontSizePx: number  // 9
   bold: boolean
   italic: boolean
   underline: boolean
@@ -61,10 +62,8 @@ type TextStyle = {
 }
 ```
 
-Defaults recomendados:
-- Etiqueta: color muted `#5d6f65`, 12–13px, normal
-- Valor: `#14201a`, 14px, semibold/bold opcional
-- Título sección: accent `#0b6b52`, 14px, uppercase puede ser CSS fija del tema o no (no pedida en props)
+Defaults: todo texto nuevo en **9px** (contrato `REQUERIMIENTO-MEDIDAS.md`).  
+Colores de marca del producto (muted / ink / accent) se definen en tokens del builder.
 
 ---
 

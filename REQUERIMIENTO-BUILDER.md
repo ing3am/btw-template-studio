@@ -40,6 +40,9 @@ vive arriba en el **panel Documento**. Contrato: **`front/REQUERIMIENTO-PAGINA.m
 **Etiquetas DIAN** (catálogo arrastrable + búsqueda + checklist):  
 **`front/REQUERIMIENTO-ETIQUETAS-DIAN.md`**. Añade bloque **Imagen** a la paleta.
 
+**Medidas tipográficas estándar** (defaults densos 8/9):  
+**`front/REQUERIMIENTO-MEDIDAS.md`**.
+
 ---
 
 ## 3. Contenedor
