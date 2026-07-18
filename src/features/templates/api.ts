@@ -296,3 +296,45 @@ export function getLatestVersion(bundle: TemplateBundle): TemplateVersion {
 export function isUsingMocks(): boolean {
   return useMocks
 }
+
+export type GeneratePdfByCufeInput = {
+  nit: string
+  cufe: string
+  documentType?: string
+}
+
+export type GeneratePdfByCufeResult = {
+  nit: string
+  cufe: string
+  documentType: string | number
+  templateId: string
+  templateVersion: number
+  contentType: string
+  fileName: string
+  pdfBase64: string
+}
+
+export async function generatePdfByCufe(
+  input: GeneratePdfByCufeInput,
+): Promise<GeneratePdfByCufeResult> {
+  if (useMocks) {
+    throw new Error(
+      'Para generar PDF configura VITE_USE_MOCKS=false y VITE_API_URL apuntando a la API.',
+    )
+  }
+
+  const result = await apiFetch<GeneratePdfByCufeResult>('/api/v1/pdf/by-cufe', {
+    method: 'POST',
+    body: JSON.stringify({
+      nit: input.nit.trim(),
+      cufe: input.cufe.trim(),
+      documentType: input.documentType ?? 'factura',
+    }),
+  })
+
+  if (!result?.pdfBase64) {
+    throw new Error('La API no devolvió el PDF en Base64.')
+  }
+
+  return result
+}
