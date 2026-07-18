@@ -1,20 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@500;600;700&display=swap');
 
 :root {
-  /* Marfil / hueso */
-  --color-bg: #f3eee4;
-  --color-bg-accent: #ebe4d6;
-  --color-surface: #fffbf5;
-  --color-surface-elevated: #fffcf7;
+  /* Fondo limpio (gris cálido, no marfil) */
+  --color-bg: #f7f6f4;
+  --color-bg-accent: #efeeec;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ffffff;
   --color-ink: #1c1412;
-  --color-muted: #7a6b62;
-  --color-line: #e0d6c8;
+  --color-muted: #6b6560;
+  --color-line: #e4e2de;
 
-  /* Marca */
-  --color-accent: #f94c10;
-  --color-accent-hover: #d93f0a;
-  --color-accent-soft: #ffe4d8;
-  --color-brand-deep: #c70039;
+  /* Marca — vino corporativo */
+  --color-accent: #c70039;
+  --color-accent-hover: #a5002f;
+  --color-accent-soft: #fde8ee;
+  --color-brand-deep: #8f0029;
 
   --color-warning: #b45309;
   --color-warning-soft: #fff1db;

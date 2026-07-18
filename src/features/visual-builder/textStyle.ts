@@ -43,7 +43,7 @@ export function defaultValueStyle(): TextStyle {
 
 export function defaultTitleStyle(): TextStyle {
   return {
-    color: '#f94c10',
+    color: '#c70039',
     fontSizePx: BASE_SIZE,
     bold: true,
     italic: false,

@@ -230,11 +230,10 @@ export function TemplateEditorPage() {
     <section className={`${styles.editor} pageEnter`}>
       <header className={styles.toolbar}>
         <div className={styles.toolbarLeft}>
-          <Link className={styles.back} to="/">
+          <Link className={styles.back} to="/" aria-label="Volver a plantillas" title="Volver a plantillas">
             <ArrowLeft size={16} />
-            Plantillas
           </Link>
-          <div>
+          <div className={styles.titleBlock}>
             <div className={styles.titleRow}>
               <h1>{data.template.name}</h1>
               <Badge
@@ -247,39 +246,43 @@ export function TemplateEditorPage() {
                 }
               >
                 {dirty
-                  ? '• Sin guardar'
+                  ? 'Sin guardar'
                   : data.template.status === 'published'
                     ? 'Publicada'
                     : 'Borrador'}
               </Badge>
             </div>
-            <p className={styles.status}>
-              {statusText} · Edita con bloques, sin HTML
-            </p>
+            <p className={styles.meta}>{statusText}</p>
           </div>
         </div>
+
+        <div className={styles.modeSwitch} role="tablist" aria-label="Modo de edición">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === 'visual'}
+            className={mode === 'visual' ? styles.modeActive : styles.modeBtn}
+            onClick={() => setMode('visual')}
+          >
+            <LayoutTemplate size={14} />
+            Diseño
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === 'advanced'}
+            className={mode === 'advanced' ? styles.modeActive : styles.modeBtn}
+            onClick={() => setMode('advanced')}
+          >
+            <Code2 size={14} />
+            Avanzado
+          </button>
+        </div>
+
         <div className={styles.toolbarActions}>
-          <div className={styles.modeSwitch} role="tablist" aria-label="Modo de edición">
-            <button
-              type="button"
-              className={mode === 'visual' ? styles.modeActive : styles.modeBtn}
-              onClick={() => setMode('visual')}
-            >
-              <LayoutTemplate size={14} />
-              Diseño
-            </button>
-            <button
-              type="button"
-              className={mode === 'advanced' ? styles.modeActive : styles.modeBtn}
-              onClick={() => setMode('advanced')}
-            >
-              <Code2 size={14} />
-              Avanzado
-            </button>
-          </div>
           <Button
             type="button"
-            variant="secondary"
+            variant="ghost"
             icon={<Save size={16} />}
             hint="⌘/Ctrl+S"
             disabled={saveDraft.isPending || !canPersist}
