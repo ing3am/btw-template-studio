@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useBlocker, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -25,8 +25,8 @@ import {
   type TemplateBlock,
 } from '@/features/visual-builder/types'
 import {
-  listTemplateAssets,
-  serializeTemplateAssetsJson,
+  parseAssetsJson,
+  serializeAssetsJson,
   type TemplateAsset,
 } from '@/features/templates/templateAssets'
 import { serializeBlocksToDocument } from '@/features/visual-builder/serializeToHtml'
@@ -74,32 +74,51 @@ export function TemplateEditorPage() {
   const [baseline, setBaseline] = useState('')
   const [statusText, setStatusText] = useState('Listo')
   const [assets, setAssets] = useState<TemplateAsset[]>([])
-
-  useEffect(() => {
-    if (!id) return
-    setAssets(listTemplateAssets(id))
-  }, [id])
+  const hydratedKeyRef = useRef('')
+  const skipHydrateRef = useRef(false)
 
   useEffect(() => {
     if (!data) return
     const version = getLatestVersion(data)
+    const hydrateKey = `${data.template.id}:${version.id}:${version.versionNumber}:${data.template.status}`
+
+    if (skipHydrateRef.current) {
+      skipHydrateRef.current = false
+      hydratedKeyRef.current = hydrateKey
+      setStatusText(
+        data.template.status === 'published'
+          ? `Publicada · v${data.template.currentVersionNumber}`
+          : `Borrador · v${data.template.currentVersionNumber}`,
+      )
+      return
+    }
+
+    if (hydratedKeyRef.current === hydrateKey) return
+    hydratedKeyRef.current = hydrateKey
+
     const nextBlocks = parseBlocks(version.blocksJson)
     const nextPage = parsePageSettingsFromCss(version.css)
     const serialized = serializeBlocksToDocument(nextBlocks, nextPage)
+    const nextAssets = parseAssetsJson(data.template.id, version.assetsJson)
+    const nextHtml = version.blocksJson ? serialized.html : version.html || serialized.html
+    const nextCss = version.blocksJson ? serialized.css : version.css || serialized.css
     setBlocks(nextBlocks)
     setPage(nextPage)
-    setHtml(version.blocksJson ? serialized.html : version.html || serialized.html)
-    setCss(version.blocksJson ? serialized.css : version.css || serialized.css)
+    setHtml(nextHtml)
+    setCss(nextCss)
     setSchemaJson(version.schemaJson)
     setSampleDataJson(version.sampleDataJson)
-    const payload = {
-      blocksJson: JSON.stringify(nextBlocks),
-      html: version.blocksJson ? serialized.html : version.html || serialized.html,
-      css: version.blocksJson ? serialized.css : version.css || serialized.css,
-      schemaJson: version.schemaJson,
-      sampleDataJson: version.sampleDataJson,
-    }
-    setBaseline(JSON.stringify(payload))
+    setAssets(nextAssets)
+    setBaseline(
+      JSON.stringify({
+        blocksJson: JSON.stringify(nextBlocks),
+        html: nextHtml,
+        css: nextCss,
+        schemaJson: version.schemaJson,
+        sampleDataJson: version.sampleDataJson,
+        assetsJson: serializeAssetsJson(nextAssets),
+      }),
+    )
     setStatusText(
       data.template.status === 'published'
         ? `Publicada · v${data.template.currentVersionNumber}`
@@ -135,9 +154,9 @@ export function TemplateEditorPage() {
         css,
         schemaJson,
         sampleDataJson,
-        assetsJson: id ? serializeTemplateAssetsJson(id) : '[]',
+        assetsJson: serializeAssetsJson(assets),
       }),
-    [blocks, html, css, schemaJson, sampleDataJson, id, assets],
+    [blocks, html, css, schemaJson, sampleDataJson, assets],
   )
 
   const dirty = Boolean(baseline) && currentPayload !== baseline
@@ -159,25 +178,38 @@ export function TemplateEditorPage() {
     }
     try {
       setStatusText('Guardando…')
+      const assetsJson = serializeAssetsJson(assets)
+      const baselinePayload = JSON.stringify({
+        blocksJson: JSON.stringify(blocks),
+        html,
+        css,
+        schemaJson,
+        sampleDataJson,
+        assetsJson,
+      })
+      // Keep editor state; cache updates must not wipe assets mid-save.
+      skipHydrateRef.current = true
       const version = await saveDraft.mutateAsync({
         html,
         css,
         schemaJson,
         sampleDataJson,
         blocksJson: JSON.stringify(blocks),
-        assetsJson: id ? serializeTemplateAssetsJson(id) : '[]',
+        assetsJson,
       })
-      setBaseline(currentPayload)
+      setBaseline(baselinePayload)
+      hydratedKeyRef.current = `${id}:${version.id}:${version.versionNumber}:draft`
       setStatusText(`Guardado · v${version.versionNumber}`)
       toast.push('Diseño guardado', 'success')
     } catch {
+      skipHydrateRef.current = false
       setStatusText('Error al guardar')
       toast.push('No pudimos guardar el diseño', 'error')
     }
   }, [
+    assets,
     blocks,
     css,
-    currentPayload,
     html,
     id,
     sampleDataJson,
@@ -195,17 +227,19 @@ export function TemplateEditorPage() {
       return
     }
     try {
-      // Always persist draft (incl. images) before publish so PDF render has assets.
       await handleSave()
       setStatusText('Publicando…')
+      skipHydrateRef.current = true
       const version = await publish.mutateAsync()
+      hydratedKeyRef.current = `${id}:${version.id}:${version.versionNumber}:published`
       setStatusText(`Publicada · v${version.versionNumber}`)
       toast.push(`Versión ${version.versionNumber} publicada`, 'success')
     } catch {
+      skipHydrateRef.current = false
       setStatusText('Error al publicar')
       toast.push('No pudimos publicar la plantilla', 'error')
     }
-  }, [blocks, handleSave, publish, toast])
+  }, [blocks, handleSave, id, publish, toast])
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {

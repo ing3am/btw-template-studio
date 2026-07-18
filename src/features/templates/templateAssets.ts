@@ -1,51 +1,59 @@
-/** Template-scoped binary assets (logos, etc.). Avoids one DB column per image. */
+/** Template-scoped binary assets (logos, etc.). Source of truth is the API (AssetsJson). */
 
 export type TemplateAsset = {
   id: string
   templateId: string
   name: string
   mime: string
-  /** Studio preview payload; backend would use storageKey instead */
   dataUrl: string
   createdAt: string
 }
 
-const STORAGE_KEY = 'btw-template-studio.assets.v1'
 const MAX_BYTES = 1.5 * 1024 * 1024
 
-type AssetStore = Record<string, TemplateAsset[]>
-
-function readStore(): AssetStore {
+export function parseAssetsJson(
+  templateId: string,
+  assetsJson?: string | null,
+): TemplateAsset[] {
+  if (!templateId || !assetsJson?.trim() || assetsJson.trim() === '[]') return []
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return {}
-    return JSON.parse(raw) as AssetStore
+    const parsed = JSON.parse(assetsJson) as Array<{
+      id?: string
+      name?: string
+      mime?: string
+      dataUrl?: string
+      createdAt?: string
+    }>
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .filter((item) => item?.id && item?.dataUrl)
+      .map((item) => ({
+        id: String(item.id),
+        templateId,
+        name: item.name || 'imagen',
+        mime: item.mime || 'image/png',
+        dataUrl: String(item.dataUrl),
+        createdAt: item.createdAt || new Date().toISOString(),
+      }))
   } catch {
-    return {}
+    return []
   }
 }
 
-function writeStore(store: AssetStore) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(store))
+export function serializeAssetsJson(assets: TemplateAsset[]): string {
+  return JSON.stringify(
+    assets.map((asset) => ({
+      id: asset.id,
+      name: asset.name,
+      mime: asset.mime,
+      dataUrl: asset.dataUrl,
+    })),
+  )
 }
 
-export function listTemplateAssets(templateId: string): TemplateAsset[] {
-  if (!templateId) return []
-  return readStore()[templateId] ?? []
-}
-
-export function getTemplateAsset(
-  templateId: string,
-  assetId: string,
-): TemplateAsset | undefined {
-  return listTemplateAssets(templateId).find((item) => item.id === assetId)
-}
-
-export function assetMapForTemplate(
-  templateId: string,
-): Record<string, string> {
+export function assetMapFromList(assets: TemplateAsset[]): Record<string, string> {
   const map: Record<string, string> = {}
-  for (const asset of listTemplateAssets(templateId)) {
+  for (const asset of assets) {
     map[asset.id] = asset.dataUrl
   }
   return map
@@ -64,7 +72,7 @@ export async function createTemplateAssetFromFile(
   }
 
   const dataUrl = await readFileAsDataUrl(file)
-  const asset: TemplateAsset = {
+  return {
     id: crypto.randomUUID(),
     templateId,
     name: file.name || 'imagen',
@@ -72,19 +80,6 @@ export async function createTemplateAssetFromFile(
     dataUrl,
     createdAt: new Date().toISOString(),
   }
-
-  const store = readStore()
-  const list = store[templateId] ?? []
-  store[templateId] = [asset, ...list]
-  writeStore(store)
-  return asset
-}
-
-export function deleteTemplateAsset(templateId: string, assetId: string) {
-  const store = readStore()
-  const list = store[templateId] ?? []
-  store[templateId] = list.filter((item) => item.id !== assetId)
-  writeStore(store)
 }
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -100,54 +95,4 @@ export function qrImageUrlFromPayload(payload: string, size = 200): string {
   const data = payload.trim()
   if (!data) return ''
   return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=8&data=${encodeURIComponent(data)}`
-}
-
-/** Serialize local assets for API persistence (PDF render). */
-export function serializeTemplateAssetsJson(templateId: string): string {
-  const assets = listTemplateAssets(templateId).map((asset) => ({
-    id: asset.id,
-    name: asset.name,
-    mime: asset.mime,
-    dataUrl: asset.dataUrl,
-  }))
-  return JSON.stringify(assets)
-}
-
-/**
- * Hydrate localStorage from a version returned by the API
- * (so preview keeps working after reload / another browser).
- */
-export function hydrateTemplateAssetsFromJson(
-  templateId: string,
-  assetsJson?: string | null,
-): void {
-  if (!templateId || !assetsJson?.trim() || assetsJson.trim() === '[]') return
-  try {
-    const parsed = JSON.parse(assetsJson) as Array<{
-      id?: string
-      name?: string
-      mime?: string
-      dataUrl?: string
-    }>
-    if (!Array.isArray(parsed) || parsed.length === 0) return
-
-    const now = new Date().toISOString()
-    const next: TemplateAsset[] = parsed
-      .filter((item) => item?.id && item?.dataUrl)
-      .map((item) => ({
-        id: String(item.id),
-        templateId,
-        name: item.name || 'imagen',
-        mime: item.mime || 'image/png',
-        dataUrl: String(item.dataUrl),
-        createdAt: now,
-      }))
-
-    if (next.length === 0) return
-    const store = readStore()
-    store[templateId] = next
-    writeStore(store)
-  } catch {
-    /* ignore invalid assetsJson */
-  }
 }

@@ -80,8 +80,6 @@ import {
 } from './dianPresence'
 import {
   createTemplateAssetFromFile,
-  deleteTemplateAsset,
-  listTemplateAssets,
   type TemplateAsset,
 } from '@/features/templates/templateAssets'
 import { extractJsonPaths } from './extractJsonPaths'
@@ -792,7 +790,7 @@ function PropsPanel({
       if (!file || !templateId) return
       try {
         const asset = await createTemplateAssetFromFile(templateId, file)
-        onAssetsChange(listTemplateAssets(templateId))
+        onAssetsChange([asset, ...assets])
         onChangeProps({
           ...selected.props,
           sourceMode: 'upload',
@@ -848,8 +846,7 @@ function PropsPanel({
                     type="button"
                     className={styles.linkBtn}
                     onClick={() => {
-                      deleteTemplateAsset(templateId, currentAsset.id)
-                      onAssetsChange(listTemplateAssets(templateId))
+                      onAssetsChange(assets.filter((item) => item.id !== currentAsset.id))
                       onChangeProps({ ...selected.props, assetId: '' })
                     }}
                   >

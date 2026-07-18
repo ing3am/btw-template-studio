@@ -1,5 +1,4 @@
 ﻿import { createBlankBundle, createSeedBundles } from './seed'
-import { hydrateTemplateAssetsFromJson } from './templateAssets'
 import type {
   CreateTemplateInput,
   SaveDraftInput,
@@ -117,13 +116,10 @@ function normalizeBundle(raw: {
   template: Template & { updatedAt: string | Date }
   versions: Array<TemplateVersion & { createdAt: string | Date }>
 }): TemplateBundle {
-  const bundle = {
+  return {
     template: normalizeTemplate(raw.template),
     versions: (raw.versions ?? []).map(normalizeVersion),
   }
-  const latest = latestVersion(bundle)
-  hydrateTemplateAssetsFromJson(bundle.template.id, latest.assetsJson)
-  return bundle
 }
 
 async function listTemplatesMock(): Promise<Template[]> {
