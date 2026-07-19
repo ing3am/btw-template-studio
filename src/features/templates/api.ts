@@ -6,10 +6,11 @@ import type {
   Template,
   TemplateBundle,
   TemplateVersion,
+  VersionStatus,
 } from './types'
 
-/** Bumped after merge: DIAN labels (main) + Seis Amazonas builder (local). */
-const STORAGE_KEY = 'btw-template-studio.templates.v21'
+/** Bumped: version status draft/published/used. */
+const STORAGE_KEY = 'btw-template-studio.templates.v22'
 
 const useMocks = isUsingMocks()
 
@@ -71,6 +72,26 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T
 }
 
+function versionStatusOf(version: TemplateVersion): VersionStatus {
+  if (version.status) return version.status
+  return version.isPublished ? 'published' : 'draft'
+}
+
+function syncTemplateMeta(bundle: TemplateBundle): Template {
+  const tip = latestVersion(bundle)
+  const tipStatus = versionStatusOf(tip)
+  const published = [...bundle.versions]
+    .filter((v) => versionStatusOf(v) === 'published')
+    .sort((a, b) => b.versionNumber - a.versionNumber)[0]
+  return {
+    ...bundle.template,
+    status: published ? 'published' : 'draft',
+    currentVersionNumber: tip.versionNumber,
+    publishedVersionNumber: published?.versionNumber ?? 0,
+    hasDraft: tipStatus === 'draft',
+  }
+}
+
 function normalizeTemplate(raw: Template & { updatedAt: string | Date }): Template {
   return {
     id: String(raw.id),
@@ -78,11 +99,15 @@ function normalizeTemplate(raw: Template & { updatedAt: string | Date }): Templa
     documentType: raw.documentType,
     status: raw.status,
     currentVersionNumber: raw.currentVersionNumber,
+    publishedVersionNumber: raw.publishedVersionNumber ?? 0,
+    hasDraft: Boolean(raw.hasDraft),
     updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : new Date(raw.updatedAt).toISOString(),
   }
 }
 
 function normalizeVersion(raw: TemplateVersion & { createdAt: string | Date }): TemplateVersion {
+  const status: VersionStatus =
+    raw.status ?? (raw.isPublished ? 'published' : 'draft')
   return {
     id: String(raw.id),
     templateId: String(raw.templateId),
@@ -94,7 +119,8 @@ function normalizeVersion(raw: TemplateVersion & { createdAt: string | Date }): 
     blocksJson: raw.blocksJson ?? '[]',
     assetsJson: raw.assetsJson ?? '[]',
     createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : new Date(raw.createdAt).toISOString(),
-    isPublished: Boolean(raw.isPublished),
+    isPublished: status === 'published',
+    status,
   }
 }
 
@@ -145,58 +171,55 @@ async function saveDraftMock(id: string, input: SaveDraftInput): Promise<Templat
   }
 
   const bundle = bundles[index]
-  const current = latestVersion(bundle)
+  const tip = latestVersion(bundle)
+  const tipStatus = versionStatusOf(tip)
   const createdAt = new Date().toISOString()
   const content = {
-    html: input.html ?? current.html,
-    css: input.css ?? current.css,
-    schemaJson: input.schemaJson ?? current.schemaJson,
-    sampleDataJson: input.sampleDataJson ?? current.sampleDataJson,
-    blocksJson: input.blocksJson ?? current.blocksJson,
-    assetsJson: input.assetsJson ?? current.assetsJson,
+    html: input.html ?? tip.html,
+    css: input.css ?? tip.css,
+    schemaJson: input.schemaJson ?? tip.schemaJson,
+    sampleDataJson: input.sampleDataJson ?? tip.sampleDataJson,
+    blocksJson: input.blocksJson ?? tip.blocksJson,
+    assetsJson: input.assetsJson ?? tip.assetsJson,
   }
 
-  // After publish, next save opens a new draft version (v+1).
-  if (current.isPublished || bundle.template.status === 'published') {
+  // Published/used tips are immutable — fork a new draft.
+  if (tipStatus !== 'draft') {
     const draftVersion: TemplateVersion = {
       id: crypto.randomUUID(),
       templateId: id,
-      versionNumber: current.versionNumber + 1,
+      versionNumber: tip.versionNumber + 1,
       ...content,
       createdAt,
       isPublished: false,
+      status: 'draft',
     }
-    bundles[index] = {
-      template: {
-        ...bundle.template,
-        status: 'draft',
-        updatedAt: createdAt,
-      },
+    const nextBundle: TemplateBundle = {
+      template: bundle.template,
       versions: [draftVersion, ...bundle.versions],
     }
+    nextBundle.template = { ...syncTemplateMeta(nextBundle), updatedAt: createdAt }
+    bundles[index] = nextBundle
     writeStore(bundles)
     return draftVersion
   }
 
   const updatedVersion: TemplateVersion = {
-    ...current,
+    ...tip,
     ...content,
     createdAt,
     isPublished: false,
+    status: 'draft',
   }
 
   const nextBundle: TemplateBundle = {
-    template: {
-      ...bundle.template,
-      status: 'draft',
-      updatedAt: updatedVersion.createdAt,
-    },
+    template: bundle.template,
     versions: [
       updatedVersion,
-      ...bundle.versions.filter((version) => version.id !== current.id),
+      ...bundle.versions.filter((version) => version.id !== tip.id),
     ],
   }
-
+  nextBundle.template = { ...syncTemplateMeta(nextBundle), updatedAt: createdAt }
   bundles[index] = nextBundle
   writeStore(bundles)
   return updatedVersion
@@ -211,32 +234,65 @@ async function publishTemplateMock(id: string): Promise<TemplateVersion> {
   }
 
   const bundle = bundles[index]
-  const current = latestVersion(bundle)
+  const tip = latestVersion(bundle)
+  const tipStatus = versionStatusOf(tip)
   const publishedAt = new Date().toISOString()
+
+  if (tipStatus === 'published') {
+    return tip
+  }
+  if (tipStatus === 'used') {
+    throw new Error('No se puede publicar una versión usada. Guarda un borrador primero.')
+  }
+
   const publishedVersion: TemplateVersion = {
-    ...current,
-    versionNumber: current.isPublished ? current.versionNumber + 1 : current.versionNumber,
-    id: current.isPublished ? crypto.randomUUID() : current.id,
+    ...tip,
     createdAt: publishedAt,
     isPublished: true,
+    status: 'published',
   }
 
   const nextBundle: TemplateBundle = {
-    template: {
-      ...bundle.template,
-      status: 'published',
-      currentVersionNumber: publishedVersion.versionNumber,
-      updatedAt: publishedAt,
-    },
-    versions: [
-      publishedVersion,
-      ...bundle.versions.map((version) => ({ ...version, isPublished: false })),
-    ],
+    template: bundle.template,
+    versions: bundle.versions.map((version) => {
+      if (version.id === tip.id) return publishedVersion
+      if (versionStatusOf(version) === 'published') {
+        return { ...version, isPublished: false, status: 'used' as const }
+      }
+      return version
+    }),
   }
-
+  nextBundle.template = { ...syncTemplateMeta(nextBundle), updatedAt: publishedAt }
   bundles[index] = nextBundle
   writeStore(bundles)
   return publishedVersion
+}
+
+async function deleteDraftMock(id: string): Promise<void> {
+  await delay()
+  const bundles = readStore()
+  const index = bundles.findIndex((item) => item.template.id === id)
+  if (index < 0) {
+    throw new Error('No encontramos esa plantilla.')
+  }
+  const bundle = bundles[index]
+  const tip = latestVersion(bundle)
+  if (versionStatusOf(tip) !== 'draft') {
+    throw new Error('Solo se puede descartar un borrador.')
+  }
+  if (bundle.versions.length === 1) {
+    throw new Error('No se puede descartar la única versión.')
+  }
+  const nextBundle: TemplateBundle = {
+    template: bundle.template,
+    versions: bundle.versions.filter((v) => v.id !== tip.id),
+  }
+  nextBundle.template = {
+    ...syncTemplateMeta(nextBundle),
+    updatedAt: new Date().toISOString(),
+  }
+  bundles[index] = nextBundle
+  writeStore(bundles)
 }
 
 async function listTemplatesApi(): Promise<Template[]> {
@@ -313,8 +369,30 @@ export async function publishTemplate(id: string): Promise<TemplateVersion> {
   return useMocks ? publishTemplateMock(id) : publishTemplateApi(id)
 }
 
+async function deleteDraftApi(id: string): Promise<void> {
+  await apiFetch<void>(`/templates/${id}/draft`, { method: 'DELETE' })
+}
+
+export async function deleteDraft(id: string): Promise<void> {
+  return useMocks ? deleteDraftMock(id) : deleteDraftApi(id)
+}
+
 export function getLatestVersion(bundle: TemplateBundle): TemplateVersion {
   return latestVersion(bundle)
+}
+
+export function describeTemplateStatus(template: Template): string {
+  const published = template.publishedVersionNumber ?? 0
+  if (template.hasDraft) {
+    if (published > 0) {
+      return `Publicada v${published} · borrador v${template.currentVersionNumber}`
+    }
+    return `Borrador · v${template.currentVersionNumber}`
+  }
+  if (template.status === 'published' && published > 0) {
+    return `Publicada · v${published}`
+  }
+  return `Borrador · v${template.currentVersionNumber}`
 }
 
 export { isUsingMocks } from './apiBase'
@@ -355,7 +433,7 @@ export async function generatePdfByCufe(
   })
 
   if (!result?.pdfBase64) {
-    throw new Error('La API no devolvió el PDF en Base64.')
+    throw new Error('La API no devolvió el PDF.')
   }
 
   return result

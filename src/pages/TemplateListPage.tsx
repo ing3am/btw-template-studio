@@ -5,6 +5,7 @@ import { Badge } from '@/shared/ui/Badge'
 import { Button } from '@/shared/ui/Button'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { useToast } from '@/shared/ui/Toast'
+import { describeTemplateStatus } from '@/features/templates/api'
 import { useCreateTemplate, useTemplates } from '@/features/templates/hooks'
 import type { DocumentType } from '@/features/templates/types'
 import { CreateTemplateDialog } from '@/features/templates/components/CreateTemplateDialog'
@@ -88,12 +89,24 @@ export function TemplateListPage() {
               <div>
                 <div className={styles.itemTitleRow}>
                   <h2>{template.name}</h2>
-                  <Badge tone={template.status === 'published' ? 'success' : 'warning'}>
-                    {template.status === 'published' ? 'Publicada' : 'Borrador'}
+                  <Badge
+                    tone={
+                      template.hasDraft
+                        ? 'warning'
+                        : template.status === 'published'
+                          ? 'success'
+                          : 'warning'
+                    }
+                  >
+                    {template.hasDraft
+                      ? 'Borrador'
+                      : template.status === 'published'
+                        ? 'Publicada'
+                        : 'Borrador'}
                   </Badge>
                 </div>
                 <p>
-                  {typeLabel[template.documentType]} · v{template.currentVersionNumber}
+                  {typeLabel[template.documentType]} · {describeTemplateStatus(template)}
                 </p>
               </div>
               <Link className={styles.action} to={`/templates/${template.id}/edit`}>

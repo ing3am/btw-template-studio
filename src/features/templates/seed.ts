@@ -50,6 +50,7 @@ function buildVersion(templateId: string, versionId: string) {
     blocksJson: JSON.stringify(blocks),
     createdAt: now(),
     isPublished: false,
+    status: 'draft' as const,
   }
 }
 
@@ -63,6 +64,8 @@ export function createSeedBundles(): TemplateBundle[] {
         documentType: 'factura',
         status: 'draft',
         currentVersionNumber: 1,
+        publishedVersionNumber: 0,
+        hasDraft: true,
         updatedAt: now(),
       },
       versions: [buildVersion(templateId, crypto.randomUUID())],
@@ -92,6 +95,8 @@ export function createBlankBundle(
       documentType,
       status: 'draft',
       currentVersionNumber: 1,
+      publishedVersionNumber: 0,
+      hasDraft: true,
       updatedAt: createdAt,
     },
     versions: [
@@ -106,6 +111,7 @@ export function createBlankBundle(
         blocksJson: JSON.stringify(blocks),
         createdAt,
         isPublished: false,
+        status: 'draft',
       },
     ],
   }

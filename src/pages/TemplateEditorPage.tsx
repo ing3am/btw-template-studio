@@ -11,8 +11,9 @@ import {
 } from 'lucide-react'
 import { CodeEditor } from '@/features/editor/CodeEditor'
 import { PreviewHtml } from '@/features/editor/PreviewHtml'
-import { getLatestVersion } from '@/features/templates/api'
+import { getLatestVersion, describeTemplateStatus } from '@/features/templates/api'
 import {
+  useDeleteDraft,
   usePublishTemplate,
   useSaveDraft,
   useTemplateBundle,
@@ -62,6 +63,7 @@ export function TemplateEditorPage() {
   const { data, isLoading, isError, refetch } = useTemplateBundle(id)
   const saveDraft = useSaveDraft(id)
   const publish = usePublishTemplate(id)
+  const discardDraft = useDeleteDraft(id)
 
   const [mode, setMode] = useState<Mode>('visual')
   const [advancedTab, setAdvancedTab] = useState<'html' | 'css' | 'sample'>('sample')
@@ -80,16 +82,12 @@ export function TemplateEditorPage() {
   useEffect(() => {
     if (!data) return
     const version = getLatestVersion(data)
-    const hydrateKey = `${data.template.id}:${version.id}:${version.versionNumber}:${data.template.status}`
+    const hydrateKey = `${data.template.id}:${version.id}:${version.versionNumber}:${data.template.hasDraft ? 'd' : 'p'}:${data.template.publishedVersionNumber ?? 0}`
 
     if (skipHydrateRef.current) {
       skipHydrateRef.current = false
       hydratedKeyRef.current = hydrateKey
-      setStatusText(
-        data.template.status === 'published'
-          ? `Publicada · v${data.template.currentVersionNumber}`
-          : `Borrador · v${data.template.currentVersionNumber}`,
-      )
+      setStatusText(describeTemplateStatus(data.template))
       return
     }
 
@@ -119,11 +117,7 @@ export function TemplateEditorPage() {
         assetsJson: serializeAssetsJson(nextAssets),
       }),
     )
-    setStatusText(
-      data.template.status === 'published'
-        ? `Publicada · v${data.template.currentVersionNumber}`
-        : `Borrador · v${data.template.currentVersionNumber}`,
-    )
+    setStatusText(describeTemplateStatus(data.template))
   }, [data])
 
   const applyBlocks = useCallback(
@@ -200,8 +194,16 @@ export function TemplateEditorPage() {
       })
       setBaseline(baselinePayload)
       hydratedKeyRef.current = `${id}:${version.id}:${version.versionNumber}:draft`
-      setStatusText(`Guardado · v${version.versionNumber}`)
-      toast.push('Diseño guardado', 'success')
+      setStatusText(
+        data
+          ? describeTemplateStatus({
+              ...data.template,
+              hasDraft: true,
+              currentVersionNumber: version.versionNumber,
+            })
+          : `Guardado · borrador v${version.versionNumber}`,
+      )
+      toast.push('Borrador guardado (la publicada no cambia)', 'success')
     } catch {
       skipHydrateRef.current = false
       setStatusText('Error al guardar')
@@ -211,6 +213,7 @@ export function TemplateEditorPage() {
     assets,
     blocks,
     css,
+    data,
     html,
     id,
     sampleDataJson,
@@ -241,6 +244,21 @@ export function TemplateEditorPage() {
       toast.push('No pudimos publicar la plantilla', 'error')
     }
   }, [blocks, handleSave, id, publish, toast])
+
+  const handleDiscardDraft = useCallback(async () => {
+    if (!data?.template.hasDraft) return
+    try {
+      skipHydrateRef.current = false
+      hydratedKeyRef.current = ''
+      await discardDraft.mutateAsync()
+      toast.push('Borrador descartado', 'success')
+    } catch (error) {
+      toast.push(
+        error instanceof Error ? error.message : 'No se pudo descartar el borrador',
+        'error',
+      )
+    }
+  }, [data?.template.hasDraft, discardDraft, toast])
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -289,16 +307,20 @@ export function TemplateEditorPage() {
                 tone={
                   dirty
                     ? 'warning'
-                    : data.template.status === 'published'
-                      ? 'success'
-                      : 'neutral'
+                    : data.template.hasDraft
+                      ? 'warning'
+                      : data.template.status === 'published'
+                        ? 'success'
+                        : 'neutral'
                 }
               >
                 {dirty
                   ? 'Sin guardar'
-                  : data.template.status === 'published'
-                    ? 'Publicada'
-                    : 'Borrador'}
+                  : data.template.hasDraft
+                    ? 'Borrador'
+                    : data.template.status === 'published'
+                      ? 'Publicada'
+                      : 'Borrador'}
               </Badge>
             </div>
             <p className={styles.meta}>{statusText}</p>
@@ -329,6 +351,17 @@ export function TemplateEditorPage() {
         </div>
 
         <div className={styles.toolbarActions}>
+          {data.template.hasDraft && (data.template.publishedVersionNumber ?? 0) > 0 ? (
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={discardDraft.isPending}
+              title="Vuelve a la versión publicada y elimina el borrador"
+              onClick={() => void handleDiscardDraft()}
+            >
+              Descartar borrador
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="ghost"

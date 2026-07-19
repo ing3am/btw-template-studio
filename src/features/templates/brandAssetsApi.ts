@@ -34,7 +34,12 @@ export function brandAssetAbsoluteUrl(contentUrl: string): string {
   if (contentUrl.startsWith('data:') || contentUrl.startsWith('blob:')) return contentUrl
   if (contentUrl.startsWith('http://') || contentUrl.startsWith('https://')) return contentUrl
   const base = getApiBase()
-  return `${base}${contentUrl.startsWith('/') ? contentUrl : `/${contentUrl}`}`
+  let path = contentUrl.startsWith('/') ? contentUrl : `/${contentUrl}`
+  // VITE_API_URL may already include /api/v1; backend contentUrl often starts with /api/v1/...
+  if (base.endsWith('/api/v1') && path.startsWith('/api/v1/')) {
+    path = path.slice('/api/v1'.length)
+  }
+  return `${base}${path}`
 }
 
 export async function listBrandAssets(nit?: string): Promise<BrandAsset[]> {
@@ -47,7 +52,7 @@ export async function listBrandAssets(nit?: string): Promise<BrandAsset[]> {
 
   const base = getApiBase()
   const qs = nit ? `?nit=${encodeURIComponent(nit)}` : ''
-  const response = await fetch(`${base}/api/v1/brand-assets${qs}`, {
+  const response = await fetch(`${base}/brand-assets${qs}`, {
     headers: { ...authHeaders() },
   })
   if (!response.ok) throw new Error(`Error HTTP ${response.status}`)
@@ -89,7 +94,7 @@ export async function uploadBrandAsset(file: File, nit?: string): Promise<BrandA
   body.append('file', file)
   if (nit) body.append('nit', nit)
 
-  const response = await fetch(`${base}/api/v1/brand-assets`, {
+  const response = await fetch(`${base}/brand-assets`, {
     method: 'POST',
     headers: { ...authHeaders() },
     body,
@@ -114,7 +119,7 @@ export async function deleteBrandAsset(id: string): Promise<void> {
   }
 
   const base = getApiBase()
-  const response = await fetch(`${base}/api/v1/brand-assets/${id}`, {
+  const response = await fetch(`${base}/brand-assets/${id}`, {
     method: 'DELETE',
     headers: { ...authHeaders() },
   })

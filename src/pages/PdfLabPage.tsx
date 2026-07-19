@@ -75,75 +75,81 @@ export function PdfLabPage() {
           <p className={pageStyles.eyebrow}>Prueba con factura real</p>
           <h1>PDF Lab</h1>
           <p className={pageStyles.lead}>
-            Envía el CUFE; el backend consulta el UBL, aplica la plantilla
-            publicada y devuelve el PDF en Base64 para previsualizarlo aquí.
+            Envía el CUFE; el backend consulta el documento, aplica la plantilla
+            publicada y muestra el PDF aquí.
           </p>
         </div>
       </header>
 
-      <form className={styles.form} onSubmit={handleSubmit}>
-        <label className={styles.field}>
-          <span>CUFE</span>
-          <input
-            value={cufe}
-            onChange={(event) => setCufe(event.target.value)}
-            placeholder="Pega el CUFE / CUDE de la factura"
-            autoComplete="off"
-            spellCheck={false}
-            disabled={loading}
-          />
-        </label>
+      <div className={styles.workspace}>
+        <div className={styles.controls}>
+          <form className={styles.form} onSubmit={handleSubmit}>
+            <label className={styles.field}>
+              <span>CUFE</span>
+              <input
+                value={cufe}
+                onChange={(event) => setCufe(event.target.value)}
+                placeholder="Pega el CUFE / CUDE de la factura"
+                autoComplete="off"
+                spellCheck={false}
+                disabled={loading}
+              />
+            </label>
 
-        <label className={styles.fieldCompact}>
-          <span>NIT (plantilla publicada)</span>
-          <input
-            value={nit}
-            onChange={(event) => setNit(event.target.value)}
-            placeholder={DEFAULT_NIT}
-            inputMode="numeric"
-            disabled={loading}
-          />
-        </label>
+            <label className={styles.fieldCompact}>
+              <span>NIT (plantilla publicada)</span>
+              <input
+                value={nit}
+                onChange={(event) => setNit(event.target.value)}
+                placeholder={DEFAULT_NIT}
+                inputMode="numeric"
+                disabled={loading}
+              />
+            </label>
 
-        <div className={styles.actions}>
-          <Button
-            type="submit"
-            disabled={loading || !cufe.trim()}
-            icon={
-              loading ? (
-                <LoaderCircle size={16} className={pageStyles.spin} />
-              ) : (
-                <FileText size={16} />
-              )
-            }
-          >
-            {loading ? 'Generando…' : 'Generar PDF'}
-          </Button>
-        </div>
-      </form>
-
-      {error ? <p className={styles.error}>{error}</p> : null}
-
-      <div className={styles.previewPanel}>
-        {previewUrl ? (
-          <>
-            <div className={styles.previewMeta}>
-              <span>{fileName ?? 'documento.pdf'}</span>
-              <a href={previewUrl} download={fileName ?? 'fe.pdf'}>
-                Descargar
-              </a>
+            <div className={styles.actions}>
+              <Button
+                type="submit"
+                disabled={loading || !cufe.trim()}
+                icon={
+                  loading ? (
+                    <LoaderCircle size={16} className={pageStyles.spin} />
+                  ) : (
+                    <FileText size={16} />
+                  )
+                }
+              >
+                {loading ? 'Generando…' : 'Generar PDF'}
+              </Button>
             </div>
-            <iframe
-              title="Vista previa PDF"
-              src={previewUrl}
-              className={styles.previewFrame}
-            />
-          </>
-        ) : (
-          <p className={styles.placeholder}>
-            El PDF aparecerá aquí cuando la API responda el Base64.
-          </p>
-        )}
+          </form>
+
+          {error ? <p className={styles.error}>{error}</p> : null}
+        </div>
+
+        <div className={styles.previewPanel}>
+          {previewUrl ? (
+            <>
+              <div className={styles.previewMeta}>
+                <span>{fileName ?? 'documento.pdf'}</span>
+                <a href={previewUrl} download={fileName ?? 'fe.pdf'}>
+                  Descargar
+                </a>
+              </div>
+              <iframe
+                title="Vista previa PDF"
+                src={previewUrl}
+                className={styles.previewFrame}
+              />
+            </>
+          ) : (
+            <p className={styles.placeholder}>
+              {loading
+                ? 'Generando el PDF…'
+                : 'La vista previa aparecerá aquí al generar el documento.'}
+            </p>
+          )}
+        </div>
       </div>
     </section>
   )

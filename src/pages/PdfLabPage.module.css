@@ -1,11 +1,25 @@
 .lab {
-  max-width: 960px;
+  max-width: none;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(240px, 40%) minmax(0, 60%);
+  gap: 1.1rem;
+  align-items: stretch;
+  min-height: calc(100vh - 11rem);
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
 }
 
 .form {
   display: grid;
   gap: 0.85rem;
-  margin-bottom: 1.1rem;
   padding: 1.15rem 1.2rem;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
@@ -49,10 +63,6 @@
   border-color: var(--color-accent);
 }
 
-.fieldCompact {
-  max-width: 16rem;
-}
-
 .actions {
   display: flex;
   gap: 0.65rem;
@@ -60,7 +70,7 @@
 }
 
 .error {
-  margin: 0 0 0.85rem;
+  margin: 0;
   color: var(--color-danger);
   font-size: 0.92rem;
 }
@@ -73,6 +83,7 @@
   overflow: hidden;
   display: grid;
   grid-template-rows: auto 1fr;
+  min-width: 0;
 }
 
 .previewMeta {
@@ -94,6 +105,7 @@
 
 .previewFrame {
   width: 100%;
+  height: 100%;
   min-height: 32rem;
   border: 0;
   background: #fff;
@@ -107,9 +119,10 @@
   align-self: center;
 }
 
-@media (max-width: 720px) {
-  .fieldCompact {
-    max-width: none;
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: 1fr;
+    min-height: 0;
   }
 
   .previewFrame {

@@ -1,5 +1,7 @@
 export type TemplateStatus = 'draft' | 'published'
 
+export type VersionStatus = 'draft' | 'published' | 'used'
+
 export type DocumentType = 'factura' | 'nota_credito' | 'nota_debito' | 'otro'
 
 export type TemplateVersion = {
@@ -15,6 +17,8 @@ export type TemplateVersion = {
   assetsJson?: string
   createdAt: string
   isPublished: boolean
+  /** draft | published | used */
+  status?: VersionStatus
 }
 
 export type Template = {
@@ -22,7 +26,12 @@ export type Template = {
   name: string
   documentType: DocumentType
   status: TemplateStatus
+  /** Tip version (what the editor loads). */
   currentVersionNumber: number
+  /** Live version used for new PDFs; 0 if never published. */
+  publishedVersionNumber?: number
+  /** Tip is an unpublished draft while a published version may still exist. */
+  hasDraft?: boolean
   updatedAt: string
 }
 
