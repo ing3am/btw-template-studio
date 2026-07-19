@@ -1,6 +1,7 @@
 import {
   applyPageOrientation,
   buildFullDocumentCss,
+  buildMarginTextsHtml,
   defaultPageSettings,
   normalizePageSettings,
   type PageOrientation,
@@ -284,14 +285,17 @@ export function serializeBlocksToDocument(
   const base = normalizePageSettings(page)
   const pages = splitIntoPages(blocks, base.orientation)
 
+  const marginHtml = buildMarginTextsHtml(base)
+
   const body = pages
     .map((section, index) => {
       const sectionPage = applyPageOrientation(base, section.orientation)
       const dims = normalizePageSettings(sectionPage)
       const breakClass = index > 0 ? ' page-break' : ''
       const content = section.blocks.map(renderBlock).join('\n\n')
+      const marginBlock = marginHtml ? `${marginHtml}\n` : ''
       return `<div class="page${breakClass}" data-orientation="${section.orientation}" style="width:${dims.widthMm}mm;min-height:${dims.heightMm}mm;padding:${dims.margins.top}mm ${dims.margins.right}mm ${dims.margins.bottom}mm ${dims.margins.left}mm;background:${esc(dims.background)}">
-${content}
+${marginBlock}${content}
 </div>`
     })
     .join('\n\n')

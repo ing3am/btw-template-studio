@@ -1,9 +1,17 @@
 .panel {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* Keep Document open state inside the canvas; body scrolls so all
+     margin text fields (incl. right) stay reachable. */
+  max-height: min(68vh, 34rem);
   border-bottom: 1px solid var(--color-line);
   background: var(--color-bg-accent);
 }
 
 .toggle {
+  flex-shrink: 0;
   width: 100%;
   display: flex;
   align-items: center;
@@ -51,7 +59,12 @@
 }
 
 .body {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 0 0.85rem 0.85rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .grid {
@@ -83,6 +96,75 @@
 .field input[type='color'] {
   padding: 0.15rem;
   height: 2rem;
+}
+
+.marginTexts {
+  margin-top: 0.75rem;
+  padding-top: 0.7rem;
+  padding-bottom: 0.15rem;
+  border-top: 1px solid var(--color-line);
+  display: grid;
+  gap: 0.65rem;
+}
+
+.marginTextsTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  color: var(--color-ink);
+}
+
+.marginTextsHint {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--color-muted);
+}
+
+.marginTextsHint code {
+  font-size: 0.7rem;
+  background: var(--color-accent-soft);
+  padding: 0.05rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.marginTextBlock {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+
+.fieldWide {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.fieldWide span {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.sideHint {
+  font-weight: 500;
+  font-style: normal;
+  color: var(--color-muted);
+  opacity: 0.9;
+}
+
+.fieldWide textarea,
+.fieldWide select {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.5rem;
+  background: #fff;
+  font-size: 0.8rem;
+  font-family: var(--font-body);
+  resize: vertical;
+  min-height: 2.4rem;
 }
 
 .orientIcons {
