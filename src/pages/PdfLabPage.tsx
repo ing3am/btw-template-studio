@@ -209,12 +209,7 @@ export function PdfLabPage() {
                 className={styles.previewFrame}
               />
             </>
-          ) : loading ? (
-            <div className={styles.loadingState}>
-              <LoaderCircle className={styles.spin} size={22} />
-              <p>Generando el PDF con la plantilla publicada…</p>
-            </div>
-          ) : (
+          ) : loading ? null : (
             <EmptyState
               title="Sin vista previa"
               description={

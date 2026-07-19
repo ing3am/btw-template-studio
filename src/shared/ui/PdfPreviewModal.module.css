@@ -120,11 +120,6 @@
   font-weight: 600;
 }
 
-.spin {
-  animation: spin 0.9s linear infinite;
-  color: var(--color-accent);
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -145,12 +140,6 @@
   }
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (max-width: 640px) {
   .dialog {
     height: min(94vh, 100%);
@@ -164,8 +153,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .backdrop,
-  .dialog,
-  .spin {
+  .dialog {
     animation: none;
   }
 }

@@ -1,4 +1,5 @@
 import type { AuthSession, AuthUser, LoginInput } from './types'
+import { withNetworkActivity } from '@/shared/lib/networkActivity'
 
 const STORAGE_KEY = 'btw-template-studio.auth.v2'
 const LEGACY_STORAGE_KEY = 'btw-template-studio.auth.v1'
@@ -202,51 +203,53 @@ export async function loginRequest(input: LoginInput): Promise<AuthSession> {
     throw new Error('Ingresa usuario y contraseña')
   }
 
-  const response = await fetch(getAuthUrl(), {
-    method: 'GET',
-    headers: {
-      user: username,
-      password,
-      Ambiente: AUTH_AMBIENTE,
-      Accept: 'application/json',
-    },
-  })
+  return withNetworkActivity(async () => {
+    const response = await fetch(getAuthUrl(), {
+      method: 'GET',
+      headers: {
+        user: username,
+        password,
+        Ambiente: AUTH_AMBIENTE,
+        Accept: 'application/json',
+      },
+    })
 
-  const rawText = await response.text()
-  let data: StartSesionPayload | null = null
-  if (rawText.trim()) {
-    try {
-      data = JSON.parse(rawText) as StartSesionPayload
-    } catch {
-      data = { message: rawText }
+    const rawText = await response.text()
+    let data: StartSesionPayload | null = null
+    if (rawText.trim()) {
+      try {
+        data = JSON.parse(rawText) as StartSesionPayload
+      } catch {
+        data = { message: rawText }
+      }
     }
-  }
 
-  if (!response.ok || data?.success === false) {
-    throw new Error(
-      data?.message || data?.error || 'Usuario o contraseña incorrectos',
-    )
-  }
+    if (!response.ok || data?.success === false) {
+      throw new Error(
+        data?.message || data?.error || 'Usuario o contraseña incorrectos',
+      )
+    }
 
-  const result = data?.result
-  const token = result?.token?.trim()
-  if (!token) {
-    throw new Error('La autenticación no devolvió un token')
-  }
+    const result = data?.result
+    const token = result?.token?.trim()
+    if (!token) {
+      throw new Error('La autenticación no devolvió un token')
+    }
 
-  const nit = resolveNit(token, result?.usuario, result?.empresa)
-  if (!nit) {
-    throw new Error('La autenticación no devolvió el NIT de la empresa')
-  }
+    const nit = resolveNit(token, result?.usuario, result?.empresa)
+    if (!nit) {
+      throw new Error('La autenticación no devolvió el NIT de la empresa')
+    }
 
-  const companyId = resolveCompanyId(token, result)
+    const companyId = resolveCompanyId(token, result)
 
-  return {
-    user: buildUser(username, token, result?.usuario, result?.empresa),
-    token,
-    nit,
-    companyId,
-    razonSocial: resolveRazonSocial(result?.empresa),
-    loggedInAt: new Date().toISOString(),
-  }
+    return {
+      user: buildUser(username, token, result?.usuario, result?.empresa),
+      token,
+      nit,
+      companyId,
+      razonSocial: resolveRazonSocial(result?.empresa),
+      loggedInAt: new Date().toISOString(),
+    }
+  })
 }

@@ -279,21 +279,6 @@
   background: #fff;
 }
 
-.loadingState {
-  display: grid;
-  place-items: center;
-  gap: 0.75rem;
-  padding: 3rem 1.5rem;
-  color: var(--color-muted);
-  text-align: center;
-  align-content: center;
-}
-
-.loadingState p {
-  margin: 0;
-  font-size: 0.95rem;
-}
-
 .spin {
   animation: spin 0.9s linear infinite;
 }

@@ -136,21 +136,6 @@
   color: var(--color-muted);
 }
 
-.loading {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-5);
-  border-radius: var(--radius-lg);
-  background: var(--color-bg-accent);
-  color: var(--color-muted);
-  font-size: 0.95rem;
-}
-
-.spin {
-  animation: spin 0.9s linear infinite;
-}
-
 .grid {
   display: grid;
   gap: var(--space-3);
@@ -262,12 +247,6 @@
   }
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (max-width: 720px) {
   .summary {
     grid-template-columns: 1fr;
@@ -276,8 +255,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .page,
-  .card,
-  .spin {
+  .card {
     animation: none;
   }
 

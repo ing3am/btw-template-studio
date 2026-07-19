@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowUpRight, FilePlus2, Files, LoaderCircle, Search, X } from 'lucide-react'
+import { ArrowUpRight, FilePlus2, Files, Search, X } from 'lucide-react'
 import { Badge } from '@/shared/ui/Badge'
 import { Button } from '@/shared/ui/Button'
 import { EmptyState } from '@/shared/ui/EmptyState'
@@ -152,13 +152,6 @@ export function TemplateListPage() {
           description="Inicia sesión de nuevo para cargar las plantillas de tu compañía."
           icon={<Files size={22} />}
         />
-      ) : null}
-
-      {isLoading ? (
-        <div className={styles.loading}>
-          <LoaderCircle className={styles.spin} size={18} />
-          Cargando plantillas…
-        </div>
       ) : null}
 
       {isError ? (
