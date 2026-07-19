@@ -88,6 +88,9 @@ export function createBlankBundle(
   const { html, css } = serializeBlocksToDocument(blocks, page)
   const sample = buildGenericEditorSample({
     sectorSalud,
+    company: {
+      nit,
+    },
   })
   const createdAt = now()
 
