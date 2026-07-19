@@ -58,3 +58,25 @@ export type SaveDraftInput = {
   blocksJson?: string
   assetsJson?: string
 }
+
+/** Client-side portable snapshot of the editable tip (not full version history). */
+export type TemplateExportV1 = {
+  schemaVersion: 1
+  exportedAt: string
+  product: 'BTW Template Studio'
+  template: {
+    name: string
+    documentType: DocumentType
+    sectorSalud?: boolean
+  }
+  version: {
+    html: string
+    css: string
+    schemaJson: string
+    sampleDataJson: string
+    blocksJson: string
+    assetsJson?: string
+    /** Optional page settings when available (also embedded in css). */
+    page?: Record<string, unknown>
+  }
+}

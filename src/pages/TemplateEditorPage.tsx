@@ -9,11 +9,16 @@ import {
   LayoutTemplate,
   History,
   RotateCcw,
+  Download,
 } from 'lucide-react'
 import { buildEditorSnapshot } from '@/features/editor/buildEditorSnapshot'
 import { CodeEditor } from '@/features/editor/CodeEditor'
 import { PreviewHtml } from '@/features/editor/PreviewHtml'
 import { getLatestVersion, describeTemplateStatus } from '@/features/templates/api'
+import {
+  buildTemplateExport,
+  downloadTemplateExport,
+} from '@/features/templates/exportImport'
 import {
   useDeleteDraft,
   usePublishTemplate,
@@ -297,6 +302,27 @@ export function TemplateEditorPage() {
     [dirty, rollback, toast],
   )
 
+  const handleExport = useCallback(() => {
+    if (!data) return
+    const tip = getLatestVersion(data)
+    const payload = buildTemplateExport({
+      name: data.template.name,
+      documentType: data.template.documentType,
+      version: {
+        html,
+        css,
+        schemaJson,
+        sampleDataJson,
+        blocksJson: JSON.stringify(blocks),
+        assetsJson: tip.assetsJson,
+      },
+      page,
+      assets,
+    })
+    downloadTemplateExport(payload)
+    toast.push('Plantilla exportada', 'success')
+  }, [assets, blocks, css, data, html, page, sampleDataJson, schemaJson, toast])
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const meta = event.metaKey || event.ctrlKey
@@ -394,6 +420,15 @@ export function TemplateEditorPage() {
               Descartar borrador
             </Button>
           ) : null}
+          <Button
+            type="button"
+            variant="ghost"
+            icon={<Download size={16} />}
+            title="Descargar JSON de la tip actual (incluye cambios sin guardar)"
+            onClick={handleExport}
+          >
+            Exportar
+          </Button>
           <Button
             type="button"
             variant="ghost"

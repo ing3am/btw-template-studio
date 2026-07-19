@@ -1,13 +1,26 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowUpRight, FilePlus2, Files, Search, X } from 'lucide-react'
+import {
+  ArrowUpRight,
+  Download,
+  FilePlus2,
+  Files,
+  Search,
+  Upload,
+  X,
+} from 'lucide-react'
 import { Badge } from '@/shared/ui/Badge'
 import { Button } from '@/shared/ui/Button'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { useToast } from '@/shared/ui/Toast'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { describeTemplateStatus } from '@/features/templates/api'
-import { useCreateTemplate, useTemplates } from '@/features/templates/hooks'
+import { describeTemplateStatus, getLatestVersion, getTemplateBundle } from '@/features/templates/api'
+import {
+  buildTemplateExport,
+  downloadTemplateExport,
+  readTemplateExportFile,
+} from '@/features/templates/exportImport'
+import { useCreateTemplate, useImportTemplate, useTemplates } from '@/features/templates/hooks'
 import type { DocumentType } from '@/features/templates/types'
 import {
   CreateTemplateDialog,
@@ -33,9 +46,12 @@ export function TemplateListPage() {
   const companyNit = session?.nit ?? ''
   const { data, isLoading, isError, refetch } = useTemplates(companyNit)
   const createMutation = useCreateTemplate(companyNit)
+  const importMutation = useImportTemplate(companyNit)
+  const importInputRef = useRef<HTMLInputElement>(null)
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
+  const [exportingId, setExportingId] = useState<string | null>(null)
 
   const filtered = useMemo(() => {
     if (!data) return []
@@ -73,6 +89,60 @@ export function TemplateListPage() {
     }
   }
 
+  async function handleExport(templateId: string, templateName: string) {
+    if (!companyNit) {
+      toast.push('Inicia sesión para exportar plantillas.', 'error')
+      return
+    }
+    try {
+      setExportingId(templateId)
+      const bundle = await getTemplateBundle(templateId, companyNit)
+      const version = getLatestVersion(bundle)
+      const payload = buildTemplateExport({
+        name: bundle.template.name,
+        documentType: bundle.template.documentType,
+        version,
+      })
+      downloadTemplateExport(payload)
+      toast.push(`Exportamos «${templateName}»`, 'success')
+    } catch (error) {
+      toast.push(
+        error instanceof Error ? error.message : 'No pudimos exportar la plantilla',
+        'error',
+      )
+    } finally {
+      setExportingId(null)
+    }
+  }
+
+  async function handleImportFile(file: File | undefined) {
+    if (!file) return
+    if (!companyNit) {
+      toast.push('Inicia sesión para importar plantillas.', 'error')
+      return
+    }
+    const parsed = await readTemplateExportFile(file)
+    if (!parsed.ok) {
+      toast.push(parsed.error, 'error')
+      return
+    }
+    try {
+      const result = await importMutation.mutateAsync(parsed.data)
+      toast.push(`Importamos «${result.template.name}» como borrador`, 'success')
+      for (const warning of result.warnings) {
+        toast.push(warning, 'info')
+      }
+      navigate(`/templates/${result.template.id}/edit`)
+    } catch (error) {
+      toast.push(
+        error instanceof Error ? error.message : 'No pudimos importar la plantilla',
+        'error',
+      )
+    } finally {
+      if (importInputRef.current) importInputRef.current.value = ''
+    }
+  }
+
   function clearFilters() {
     setQuery('')
     setTypeFilter('all')
@@ -88,13 +158,36 @@ export function TemplateListPage() {
             Diseña facturas electrónicas con bloques visuales. El cliente no necesita saber HTML.
           </p>
         </div>
-        <Button
-          type="button"
-          icon={<FilePlus2 size={16} />}
-          onClick={() => setOpen(true)}
-        >
-          Nueva plantilla
-        </Button>
+        <div className={styles.headerActions}>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="application/json,.json"
+            className={styles.srOnly}
+            tabIndex={-1}
+            aria-hidden
+            onChange={(event) => {
+              const file = event.target.files?.[0]
+              void handleImportFile(file)
+            }}
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            icon={<Upload size={16} />}
+            disabled={!companyNit || importMutation.isPending}
+            onClick={() => importInputRef.current?.click()}
+          >
+            Importar
+          </Button>
+          <Button
+            type="button"
+            icon={<FilePlus2 size={16} />}
+            onClick={() => setOpen(true)}
+          >
+            Nueva plantilla
+          </Button>
+        </div>
       </header>
 
       {!isLoading && !isError && data && data.length > 0 ? (
@@ -187,40 +280,60 @@ export function TemplateListPage() {
       {!isLoading && !isError && filtered.length > 0 ? (
         <div className={styles.grid}>
           {filtered.map((template, index) => (
-            <Link
+            <article
               key={template.id}
-              to={`/templates/${template.id}/edit`}
               className={styles.card}
               style={{ ['--stagger' as string]: index }}
-              aria-label={`Abrir editor de ${template.name}`}
             >
-              <div className={styles.cardTop}>
-                <h2 className={styles.cardName}>{template.name}</h2>
-                <Badge
-                  tone={
-                    template.hasDraft
-                      ? 'warning'
+              <Link
+                to={`/templates/${template.id}/edit`}
+                className={styles.cardLink}
+                aria-label={`Abrir editor de ${template.name}`}
+              >
+                <div className={styles.cardTop}>
+                  <h2 className={styles.cardName}>{template.name}</h2>
+                  <Badge
+                    tone={
+                      template.hasDraft
+                        ? 'warning'
+                        : template.status === 'published'
+                          ? 'success'
+                          : 'warning'
+                    }
+                  >
+                    {template.hasDraft
+                      ? 'Borrador'
                       : template.status === 'published'
-                        ? 'success'
-                        : 'warning'
-                  }
-                >
-                  {template.hasDraft
-                    ? 'Borrador'
-                    : template.status === 'published'
-                      ? 'Publicada'
-                      : 'Borrador'}
-                </Badge>
-              </div>
-              <p className={styles.cardMeta}>
-                {typeLabel[template.documentType]} · {describeTemplateStatus(template)}
-                {template.nit ? ` · NIT ${template.nit}` : ''}
-              </p>
+                        ? 'Publicada'
+                        : 'Borrador'}
+                  </Badge>
+                </div>
+                <p className={styles.cardMeta}>
+                  {typeLabel[template.documentType]} · {describeTemplateStatus(template)}
+                  {template.nit ? ` · NIT ${template.nit}` : ''}
+                </p>
+              </Link>
               <div className={styles.cardFoot}>
-                <span className={styles.cardHint}>Abrir editor</span>
-                <ArrowUpRight size={18} aria-hidden />
+                <Link
+                  to={`/templates/${template.id}/edit`}
+                  className={styles.cardHint}
+                >
+                  Abrir editor
+                  <ArrowUpRight size={16} aria-hidden />
+                </Link>
+                <button
+                  type="button"
+                  className={styles.exportBtn}
+                  disabled={exportingId === template.id}
+                  aria-label={`Exportar ${template.name}`}
+                  title="Descargar JSON de la plantilla"
+                  onClick={() => void handleExport(template.id, template.name)}
+                >
+                  <Download size={14} aria-hidden />
+                  Exportar
+                </button>
               </div>
-            </Link>
+            </article>
           ))}
         </div>
       ) : null}

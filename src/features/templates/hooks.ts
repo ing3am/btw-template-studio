@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as api from './api'
+import { importTemplateFromExport } from './exportImport'
 import type {
   CreateTemplateInput,
   SaveDraftInput,
   TemplateBundle,
+  TemplateExportV1,
   TemplateVersion,
 } from './types'
 
@@ -55,6 +57,18 @@ export function useCreateTemplate(nit: string | undefined) {
   const scopedNit = nit?.trim() ?? ''
   return useMutation({
     mutationFn: (input: CreateTemplateInput) => api.createTemplate(input),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: keys.list(scopedNit) })
+    },
+  })
+}
+
+export function useImportTemplate(nit: string | undefined) {
+  const queryClient = useQueryClient()
+  const scopedNit = nit?.trim() ?? ''
+  return useMutation({
+    mutationFn: (payload: TemplateExportV1) =>
+      importTemplateFromExport(payload, scopedNit),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: keys.list(scopedNit) })
     },
