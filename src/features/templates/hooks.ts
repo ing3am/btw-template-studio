@@ -143,3 +143,14 @@ export function useDeleteDraft(id: string) {
     },
   })
 }
+
+export function useRollbackVersion(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (versionNumber: number) => api.rollbackVersion(id, versionNumber),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: keys.detail(id) })
+      await queryClient.invalidateQueries({ queryKey: keys.list })
+    },
+  })
+}

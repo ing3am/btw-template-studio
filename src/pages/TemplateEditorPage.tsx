@@ -8,6 +8,8 @@ import {
   AlertTriangle,
   Code2,
   LayoutTemplate,
+  History,
+  RotateCcw,
 } from 'lucide-react'
 import { CodeEditor } from '@/features/editor/CodeEditor'
 import { PreviewHtml } from '@/features/editor/PreviewHtml'
@@ -15,6 +17,7 @@ import { getLatestVersion, describeTemplateStatus } from '@/features/templates/a
 import {
   useDeleteDraft,
   usePublishTemplate,
+  useRollbackVersion,
   useSaveDraft,
   useTemplateBundle,
 } from '@/features/templates/hooks'
@@ -64,6 +67,7 @@ export function TemplateEditorPage() {
   const saveDraft = useSaveDraft(id)
   const publish = usePublishTemplate(id)
   const discardDraft = useDeleteDraft(id)
+  const rollback = useRollbackVersion(id)
 
   const [mode, setMode] = useState<Mode>('visual')
   const [advancedTab, setAdvancedTab] = useState<'html' | 'css' | 'sample'>('sample')
@@ -260,6 +264,33 @@ export function TemplateEditorPage() {
     }
   }, [data?.template.hasDraft, discardDraft, toast])
 
+  const handleRollback = useCallback(
+    async (versionNumber: number) => {
+      if (dirty) {
+        toast.push('Guarda o descarta tus cambios locales antes de volver a una versión.', 'error')
+        return
+      }
+      const ok = window.confirm(
+        `¿Volver a la versión ${versionNumber} como publicada?\n` +
+          'Las facturas nuevas usarán esa versión. Si hay un borrador abierto, se descartará.',
+      )
+      if (!ok) return
+      try {
+        skipHydrateRef.current = false
+        hydratedKeyRef.current = ''
+        const version = await rollback.mutateAsync(versionNumber)
+        setStatusText(`Publicada · v${version.versionNumber}`)
+        toast.push(`Versión ${version.versionNumber} vuelve a ser la publicada`, 'success')
+      } catch (error) {
+        toast.push(
+          error instanceof Error ? error.message : 'No se pudo volver a esa versión',
+          'error',
+        )
+      }
+    },
+    [dirty, rollback, toast],
+  )
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const meta = event.metaKey || event.ctrlKey
@@ -392,6 +423,48 @@ export function TemplateEditorPage() {
           </Button>
         </div>
       </header>
+
+      {data.versions.length > 1 ? (
+        <div className={styles.versionBar} aria-label="Historial de versiones">
+          <span className={styles.versionBarLabel}>
+            <History size={13} />
+            Versiones
+          </span>
+          <ul className={styles.versionList}>
+            {[...data.versions]
+              .sort((a, b) => b.versionNumber - a.versionNumber)
+              .map((version) => {
+                const status = version.status ?? (version.isPublished ? 'published' : 'draft')
+                const label =
+                  status === 'published'
+                    ? 'Publicada'
+                    : status === 'used'
+                      ? 'Usada'
+                      : 'Borrador'
+                return (
+                  <li key={version.id} className={styles.versionItem}>
+                    <span className={styles.versionNum}>v{version.versionNumber}</span>
+                    <span className={styles.versionStatus} data-status={status}>
+                      {label}
+                    </span>
+                    {status === 'used' ? (
+                      <button
+                        type="button"
+                        className={styles.versionRollback}
+                        disabled={rollback.isPending || dirty}
+                        title="Volver a publicar esta versión (sin crear un número nuevo)"
+                        onClick={() => void handleRollback(version.versionNumber)}
+                      >
+                        <RotateCcw size={12} />
+                        Volver aquí
+                      </button>
+                    ) : null}
+                  </li>
+                )
+              })}
+          </ul>
+        </div>
+      ) : null}
 
       <div className={styles.workspace}>
         <div className={styles.codePane}>

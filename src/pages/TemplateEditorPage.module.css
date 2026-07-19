@@ -1,6 +1,6 @@
 .editor {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto 1fr;
   gap: 0;
   height: 100%;
   min-height: 0;
@@ -126,6 +126,90 @@
   padding: 0.4rem 0.75rem;
   font-size: 0.8rem;
   border-radius: 0.45rem;
+}
+
+.versionBar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0.85rem;
+  border-bottom: 1px solid rgba(228, 226, 222, 0.95);
+  background: color-mix(in srgb, var(--color-bg-accent) 80%, #fff);
+  overflow-x: auto;
+}
+
+.versionBarLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: var(--color-muted);
+}
+
+.versionList {
+  display: flex;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.versionItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.4rem;
+  background: var(--color-surface);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.versionNum {
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.versionStatus {
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.versionStatus[data-status='published'] {
+  color: var(--color-brand, #1a5f4a);
+}
+
+.versionStatus[data-status='used'] {
+  color: var(--color-muted);
+}
+
+.versionStatus[data-status='draft'] {
+  color: #a16207;
+}
+
+.versionRollback {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-accent);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  padding: 0;
+}
+
+.versionRollback:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.versionRollback:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .workspace {

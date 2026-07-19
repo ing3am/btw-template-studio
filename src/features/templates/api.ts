@@ -83,12 +83,15 @@ function syncTemplateMeta(bundle: TemplateBundle): Template {
   const published = [...bundle.versions]
     .filter((v) => versionStatusOf(v) === 'published')
     .sort((a, b) => b.versionNumber - a.versionNumber)[0]
+  const hasDraft = tipStatus === 'draft'
   return {
     ...bundle.template,
     status: published ? 'published' : 'draft',
-    currentVersionNumber: tip.versionNumber,
+    currentVersionNumber: hasDraft
+      ? tip.versionNumber
+      : (published?.versionNumber ?? tip.versionNumber),
     publishedVersionNumber: published?.versionNumber ?? 0,
-    hasDraft: tipStatus === 'draft',
+    hasDraft,
   }
 }
 
@@ -377,8 +380,75 @@ export async function deleteDraft(id: string): Promise<void> {
   return useMocks ? deleteDraftMock(id) : deleteDraftApi(id)
 }
 
+async function rollbackVersionMock(
+  id: string,
+  versionNumber: number,
+): Promise<TemplateVersion> {
+  await delay()
+  const bundles = readStore()
+  const index = bundles.findIndex((item) => item.template.id === id)
+  if (index < 0) throw new Error('No encontramos esa plantilla.')
+  const bundle = bundles[index]
+  let versions = [...bundle.versions]
+  const target = versions.find((v) => v.versionNumber === versionNumber)
+  if (!target) throw new Error(`No existe la versión ${versionNumber}.`)
+  if (versionStatusOf(target) === 'published') return target
+  if (versionStatusOf(target) !== 'used') {
+    throw new Error('Solo se puede volver a una versión usada (ya publicada antes).')
+  }
+
+  const tip = latestVersion(bundle)
+  if (versionStatusOf(tip) === 'draft') {
+    if (versions.length <= 1) throw new Error('No se puede descartar el único borrador.')
+    versions = versions.filter((v) => v.id !== tip.id)
+  }
+
+  const publishedAt = new Date().toISOString()
+  versions = versions.map((v) => {
+    if (v.versionNumber === versionNumber) {
+      return { ...v, status: 'published' as const, isPublished: true, createdAt: publishedAt }
+    }
+    if (versionStatusOf(v) === 'published') {
+      return { ...v, status: 'used' as const, isPublished: false }
+    }
+    return v
+  })
+
+  const nextBundle: TemplateBundle = { template: bundle.template, versions }
+  nextBundle.template = { ...syncTemplateMeta(nextBundle), updatedAt: publishedAt }
+  bundles[index] = nextBundle
+  writeStore(bundles)
+  return versions.find((v) => v.versionNumber === versionNumber)!
+}
+
+async function rollbackVersionApi(
+  id: string,
+  versionNumber: number,
+): Promise<TemplateVersion> {
+  const version = await apiFetch<TemplateVersion & { createdAt: string }>(
+    `/templates/${id}/versions/${versionNumber}/rollback`,
+    { method: 'POST' },
+  )
+  return normalizeVersion(version)
+}
+
+export async function rollbackVersion(
+  id: string,
+  versionNumber: number,
+): Promise<TemplateVersion> {
+  return useMocks
+    ? rollbackVersionMock(id, versionNumber)
+    : rollbackVersionApi(id, versionNumber)
+}
+
+/** Version loaded in the editor: open draft, else live published, else highest number. */
 export function getLatestVersion(bundle: TemplateBundle): TemplateVersion {
-  return latestVersion(bundle)
+  const sorted = [...bundle.versions].sort((a, b) => b.versionNumber - a.versionNumber)
+  const draft = sorted.find((v) => versionStatusOf(v) === 'draft')
+  if (draft) return draft
+  const published = sorted.find((v) => versionStatusOf(v) === 'published')
+  if (published) return published
+  return sorted[0]
 }
 
 export function describeTemplateStatus(template: Template): string {
