@@ -57,6 +57,10 @@ export const DEFAULT_FONT_SIZE_SMALL_PX = 8
 export const DEFAULT_LEFT_MARGIN_TEXT =
   'PROVEEDOR TECNOLÓGICO: BTW S.A.S. NIT 900665411 - INFORMACIÓN FACTURACIÓN ERP: NA'
 
+/** Default bottom-margin band for new templates (two lines, centered). */
+export const DEFAULT_BOTTOM_MARGIN_TEXT =
+  '© Copyright 2026. Documento creado por BTW S.A.S proveedor tecnológico de BYTHEWAVE SAS,\nsujeto a condiciones y restricciones.'
+
 export function emptyMarginTexts(): PageMarginTexts {
   return { top: '', right: '', bottom: '', left: '' }
 }
@@ -65,6 +69,7 @@ export function defaultMarginTexts(): PageMarginTexts {
   return {
     ...emptyMarginTexts(),
     left: DEFAULT_LEFT_MARGIN_TEXT,
+    bottom: DEFAULT_BOTTOM_MARGIN_TEXT,
   }
 }
 
@@ -74,8 +79,11 @@ export function defaultPageSettings(): PageSettings {
     widthMm: 216,
     heightMm: 279,
     orientation: 'vertical',
-    /** Left is wider so default margin text fits after -90deg rotate. */
-    margins: { top: 5, right: 5, bottom: 5, left: 10 },
+    /**
+     * Left is wider so default margin text fits after -90deg rotate.
+     * Bottom is taller so the default two-line copyright fits.
+     */
+    margins: { top: 5, right: 5, bottom: 8, left: 10 },
     marginTexts: defaultMarginTexts(),
     background: '#ffffff',
     defaultFontSizeLarge: DEFAULT_FONT_SIZE_LARGE_PX,
@@ -296,10 +304,9 @@ html, body {
 }
 .page-margin-text__inner {
   display: block;
-  white-space: pre;
   text-align: center;
 }
-/* Top / bottom: horizontal, centered in content width */
+/* Top / bottom: horizontal, centered; allow up to 2 lines */
 .page-margin-text--top,
 .page-margin-text--bottom {
   left: ${margins.left}mm;
@@ -327,7 +334,8 @@ html, body {
 .page-margin-text--bottom .page-margin-text__inner {
   max-width: ${horizontalRunMm}mm;
   overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: pre-line;
+  text-align: center;
 }
 /*
  * Left / right: margin-band inset + absolute center + rotate.
