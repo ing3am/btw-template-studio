@@ -57,3 +57,9 @@ export function useAuth(): AuthContextValue {
   }
   return ctx
 }
+
+/** Company NIT from StartSesion (`empresa.nit`), digits only. */
+export function useCompanyNit(): string {
+  const { session } = useAuth()
+  return (session?.nit || '').replace(/\D/g, '')
+}

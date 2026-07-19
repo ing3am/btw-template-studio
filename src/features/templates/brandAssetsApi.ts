@@ -1,4 +1,5 @@
 import { authHeaders, getApiBase, isUsingMocks } from './apiBase'
+import { getSessionNit } from '@/features/auth/api'
 
 export const BRAND_ASSET_MAX_BYTES = 1.5 * 1024 * 1024
 export const BRAND_ASSET_MAX_COUNT = 5
@@ -43,15 +44,14 @@ export function brandAssetAbsoluteUrl(contentUrl: string): string {
 }
 
 export async function listBrandAssets(nit?: string): Promise<BrandAsset[]> {
+  const companyNit = (nit || getSessionNit()).replace(/\D/g, '')
   if (isUsingMocks()) {
     const all = readMock()
-    if (!nit) return all
-    const digits = nit.replace(/\D/g, '')
-    return all.filter((item) => item.nit === digits || item.nit === nit)
+    return all.filter((item) => item.nit === companyNit)
   }
 
   const base = getApiBase()
-  const qs = nit ? `?nit=${encodeURIComponent(nit)}` : ''
+  const qs = `?nit=${encodeURIComponent(companyNit)}`
   const response = await fetch(`${base}/brand-assets${qs}`, {
     headers: { ...authHeaders() },
   })
@@ -67,8 +67,9 @@ export async function uploadBrandAsset(file: File, nit?: string): Promise<BrandA
     throw new Error('La imagen supera 1.5 MB. Usa un archivo más liviano.')
   }
 
+  const companyNit = (nit || getSessionNit()).replace(/\D/g, '')
+
   if (isUsingMocks()) {
-    const companyNit = (nit || '900000000').replace(/\D/g, '') || '900000000'
     const existing = readMock().filter((item) => item.nit === companyNit)
     if (existing.length >= BRAND_ASSET_MAX_COUNT) {
       throw new Error(
@@ -92,7 +93,7 @@ export async function uploadBrandAsset(file: File, nit?: string): Promise<BrandA
   const base = getApiBase()
   const body = new FormData()
   body.append('file', file)
-  if (nit) body.append('nit', nit)
+  body.append('nit', companyNit)
 
   const response = await fetch(`${base}/brand-assets`, {
     method: 'POST',
