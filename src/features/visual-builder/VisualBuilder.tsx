@@ -1177,7 +1177,9 @@ export function VisualBuilder({
 
     const target = findBlock(blocks, overId)
     if (target?.block.type === 'datos') {
-      const field = createFieldFromDianLabel(label)
+      const field = createFieldFromDianLabel(label, {
+        defaultFontSizePx: page.defaultFontSizeLarge,
+      })
       const fields = parseDatosFields(target.block.props.fieldsJson)
       onChange(
         updateTree(blocks, target.block.id, (block) => ({
@@ -1196,7 +1198,9 @@ export function VisualBuilder({
     }
 
     // Nueva etiqueta = bloque Datos con diseño completo (no texto quemado)
-    const datos = createDatosBlockFromDianLabel(label)
+    const datos = createDatosBlockFromDianLabel(label, {
+      defaultFontSizePx: page.defaultFontSizeLarge,
+    })
     insertBlockAtOver(datos, overId, 'datos')
   }
 
@@ -1218,7 +1222,9 @@ export function VisualBuilder({
 
     if (activeId.startsWith('palette:')) {
       const type = activeId.replace('palette:', '') as BlockType
-      const next = createBlock(type)
+      const next = createBlock(type, {
+        defaultFontSizePx: page.defaultFontSizeLarge,
+      })
       insertBlockAtOver(next, overId, type)
       return
     }

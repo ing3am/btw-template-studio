@@ -19,6 +19,8 @@ function buildVersion(templateId: string, versionId: string) {
   const page = defaultPageSettings()
   const blocks = createDefaultFacturaBlocks({
     sectorSalud: DEFAULT_SECTOR_SALUD,
+    defaultFontSizeLarge: page.defaultFontSizeLarge,
+    defaultFontSizeSmall: page.defaultFontSizeSmall,
   })
   const { html, css } = serializeBlocksToDocument(blocks, page)
   const sample = buildGenericEditorSample({
@@ -84,6 +86,8 @@ export function createBlankBundle(
   const page = defaultPageSettings()
   const blocks = createDefaultFacturaBlocks({
     sectorSalud,
+    defaultFontSizeLarge: page.defaultFontSizeLarge,
+    defaultFontSizeSmall: page.defaultFontSizeSmall,
   })
   const { html, css } = serializeBlocksToDocument(blocks, page)
   const sample = buildGenericEditorSample({

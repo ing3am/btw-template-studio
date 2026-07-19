@@ -13,6 +13,7 @@ import {
   type TemplateBlock,
 } from './types'
 import {
+  defaultLabelStyle,
   defaultTitleStyle,
   defaultValueStyle,
 } from './textStyle'
@@ -73,21 +74,33 @@ export function labelFromPaletteId(activeId: string): DianLabel | null {
  * Conserva diseño/funcionalidad de Datos (caja, align, presentation),
  * pero el origen es el catálogo (tagId / panelName).
  */
-export function createDatosBlockFromDianLabel(label: DianLabel): TemplateBlock {
+export function createDatosBlockFromDianLabel(
+  label: DianLabel,
+  options?: { defaultFontSizePx?: number },
+): TemplateBlock {
+  const fontSizePx =
+    typeof options?.defaultFontSizePx === 'number' && options.defaultFontSizePx > 0
+      ? options.defaultFontSizePx
+      : undefined
   const valueOnly = VALUE_ONLY_TAGS.has(label.id)
+  const baseValue = defaultValueStyle()
   const field = fieldFromTag(label.id, {
     label: valueOnly ? '' : label.label,
     valueStyle: valueOnly
       ? {
-          ...defaultValueStyle(),
+          ...baseValue,
           fontSizePx: label.id === 'doc-numero' ? 11 : 10,
           bold: true,
           align: 'centro',
         }
-      : defaultValueStyle(),
+      : fontSizePx
+        ? { ...baseValue, fontSizePx }
+        : baseValue,
   })
 
-  const block = createBlock('datos')
+  const block = createBlock('datos', {
+    defaultFontSizePx: fontSizePx,
+  })
   block.props = {
     ...block.props,
     title: '',
@@ -100,19 +113,38 @@ export function createDatosBlockFromDianLabel(label: DianLabel): TemplateBlock {
     boxRadius: 0,
     boxPadding: 0,
     fieldsJson: stringifyDatosFields([field]),
-    titleStyleJson: stringifyTextStyle(defaultTitleStyle()),
+    titleStyleJson: stringifyTextStyle(
+      fontSizePx
+        ? { ...defaultTitleStyle(), fontSizePx }
+        : defaultTitleStyle(),
+    ),
   }
   return block
 }
 
 /** Fila lista para agregar a un Datos existente desde una etiqueta. */
-export function createFieldFromDianLabel(label: DianLabel) {
+export function createFieldFromDianLabel(
+  label: DianLabel,
+  options?: { defaultFontSizePx?: number },
+) {
+  const fontSizePx =
+    typeof options?.defaultFontSizePx === 'number' && options.defaultFontSizePx > 0
+      ? options.defaultFontSizePx
+      : undefined
+  const baseLabel = defaultLabelStyle()
+  const baseValue = defaultValueStyle()
   return createDatosField({
     tagId: label.id,
     label: label.label,
     mode: 'campo',
     value: label.path,
     format: label.format,
+    ...(fontSizePx
+      ? {
+          labelStyle: { ...baseLabel, fontSizePx },
+          valueStyle: { ...baseValue, fontSizePx },
+        }
+      : {}),
   })
 }
 

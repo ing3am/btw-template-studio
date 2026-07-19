@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import {
+  PAGE_FONT_SIZE_MAX,
+  PAGE_FONT_SIZE_MIN,
   PAGE_SIZE_PRESETS,
   applyPageOrientation,
   applyPageSizeId,
@@ -20,7 +22,7 @@ function sizeLabel(page: PageSettings): string {
 
 function pageSummary(page: PageSettings): string {
   const orient = page.orientation === 'horizontal' ? 'horizontal' : 'vertical'
-  return `${sizeLabel(page)} · ${orient} · ${page.widthMm}×${page.heightMm} mm`
+  return `${sizeLabel(page)} · ${orient} · ${page.widthMm}×${page.heightMm} mm · ${page.defaultFontSizeLarge}/${page.defaultFontSizeSmall}px`
 }
 
 export function DocumentPagePanel({ page, onChange }: DocumentPagePanelProps) {
@@ -202,6 +204,39 @@ export function DocumentPagePanel({ page, onChange }: DocumentPagePanelProps) {
                       ...page.margins,
                       right: Math.max(0, Number(event.target.value) || 0),
                     },
+                  })
+                }
+              />
+            </label>
+
+            <label className={styles.field}>
+              <span>Fuente mayor (px)</span>
+              <input
+                type="number"
+                min={PAGE_FONT_SIZE_MIN}
+                max={PAGE_FONT_SIZE_MAX}
+                value={page.defaultFontSizeLarge}
+                onChange={(event) =>
+                  onChange({
+                    ...page,
+                    defaultFontSizeLarge:
+                      Number(event.target.value) || page.defaultFontSizeLarge,
+                  })
+                }
+              />
+            </label>
+            <label className={styles.field}>
+              <span>Fuente menor (px)</span>
+              <input
+                type="number"
+                min={PAGE_FONT_SIZE_MIN}
+                max={PAGE_FONT_SIZE_MAX}
+                value={page.defaultFontSizeSmall}
+                onChange={(event) =>
+                  onChange({
+                    ...page,
+                    defaultFontSizeSmall:
+                      Number(event.target.value) || page.defaultFontSizeSmall,
                   })
                 }
               />

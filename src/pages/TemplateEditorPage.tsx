@@ -55,15 +55,24 @@ import styles from './TemplateEditorPage.module.css'
 
 type Mode = 'visual' | 'advanced'
 
-function parseBlocks(blocksJson: string | undefined): TemplateBlock[] {
-  if (!blocksJson) return createDefaultFacturaBlocks()
+function parseBlocks(
+  blocksJson: string | undefined,
+  page?: PageSettings,
+): TemplateBlock[] {
+  const fontOpts = page
+    ? {
+        defaultFontSizeLarge: page.defaultFontSizeLarge,
+        defaultFontSizeSmall: page.defaultFontSizeSmall,
+      }
+    : undefined
+  if (!blocksJson) return createDefaultFacturaBlocks(fontOpts)
   try {
     const parsed = JSON.parse(blocksJson) as TemplateBlock[]
     return Array.isArray(parsed) && parsed.length > 0
       ? migrateTemplateBlocks(parsed)
-      : createDefaultFacturaBlocks()
+      : createDefaultFacturaBlocks(fontOpts)
   } catch {
-    return createDefaultFacturaBlocks()
+    return createDefaultFacturaBlocks(fontOpts)
   }
 }
 
@@ -108,8 +117,8 @@ export function TemplateEditorPage() {
     if (hydratedKeyRef.current === hydrateKey) return
     hydratedKeyRef.current = hydrateKey
 
-    const nextBlocks = parseBlocks(version.blocksJson)
     const nextPage = parsePageSettingsFromCss(version.css)
+    const nextBlocks = parseBlocks(version.blocksJson, nextPage)
     const serialized = serializeBlocksToDocument(nextBlocks, nextPage)
     const nextAssets = parseAssetsJson(data.template.id, version.assetsJson)
     const nextHtml = version.blocksJson ? serialized.html : version.html || serialized.html
