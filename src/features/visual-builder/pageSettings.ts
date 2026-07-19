@@ -53,8 +53,19 @@ export const PAGE_FONT_SIZE_MAX = 72
 export const DEFAULT_FONT_SIZE_LARGE_PX = 9
 export const DEFAULT_FONT_SIZE_SMALL_PX = 8
 
+/** Default left-margin band for new templates (two lines, as written). */
+export const DEFAULT_LEFT_MARGIN_TEXT =
+  'PROVEEDOR TECNOLÓGICO: BTW S.A.S. NIT 900665411 -\nINFORMACIÓN FACTURACIÓN ERP: NA'
+
 export function emptyMarginTexts(): PageMarginTexts {
   return { top: '', right: '', bottom: '', left: '' }
+}
+
+export function defaultMarginTexts(): PageMarginTexts {
+  return {
+    ...emptyMarginTexts(),
+    left: DEFAULT_LEFT_MARGIN_TEXT,
+  }
 }
 
 export function defaultPageSettings(): PageSettings {
@@ -64,7 +75,7 @@ export function defaultPageSettings(): PageSettings {
     heightMm: 279,
     orientation: 'vertical',
     margins: { top: 5, right: 5, bottom: 5, left: 5 },
-    marginTexts: emptyMarginTexts(),
+    marginTexts: defaultMarginTexts(),
     background: '#ffffff',
     defaultFontSizeLarge: DEFAULT_FONT_SIZE_LARGE_PX,
     defaultFontSizeSmall: DEFAULT_FONT_SIZE_SMALL_PX,
