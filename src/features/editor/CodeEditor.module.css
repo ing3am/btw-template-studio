@@ -1,6 +1,7 @@
 .wrap {
-  display: grid;
-  grid-template-rows: auto 1fr;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
   min-height: 0;
   height: 100%;
   border: 1px solid var(--color-line);
@@ -18,4 +19,21 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
+/* Absolute fill so Monaco always gets a real pixel height. */
+.monaco {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+}
+
+.monaco > section,
+.monaco > div {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
 }
