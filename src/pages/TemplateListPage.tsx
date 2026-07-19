@@ -380,14 +380,18 @@ export function TemplateListPage() {
                         ? 'warning'
                         : template.status === 'published'
                           ? 'success'
-                          : 'warning'
+                          : template.status === 'used'
+                            ? 'neutral'
+                            : 'warning'
                     }
                   >
                     {template.hasDraft
                       ? 'Borrador'
                       : template.status === 'published'
                         ? 'Publicada'
-                        : 'Borrador'}
+                        : template.status === 'used'
+                          ? 'Usada'
+                          : 'Borrador'}
                   </Badge>
                 </div>
                 <p className={styles.cardMeta}>

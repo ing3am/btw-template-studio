@@ -1,4 +1,4 @@
-export type TemplateStatus = 'draft' | 'published' | 'archived'
+export type TemplateStatus = 'draft' | 'published' | 'archived' | 'used'
 
 export type VersionStatus = 'draft' | 'published' | 'used'
 

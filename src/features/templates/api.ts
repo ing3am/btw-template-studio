@@ -7,6 +7,7 @@ import type {
   SaveDraftInput,
   Template,
   TemplateBundle,
+  TemplateStatus,
   TemplateVersion,
   VersionStatus,
 } from './types'
@@ -99,9 +100,18 @@ function syncTemplateMeta(bundle: TemplateBundle): Template {
     .filter((v) => versionStatusOf(v) === 'published')
     .sort((a, b) => b.versionNumber - a.versionNumber)[0]
   const hasDraft = tipStatus === 'draft'
+  const hasUsed = bundle.versions.some((v) => versionStatusOf(v) === 'used')
+  const status: TemplateStatus =
+    bundle.template.status === 'archived'
+      ? 'archived'
+      : published
+        ? 'published'
+        : hasUsed
+          ? 'used'
+          : 'draft'
   return {
     ...bundle.template,
-    status: published ? 'published' : 'draft',
+    status,
     currentVersionNumber: hasDraft
       ? tip.versionNumber
       : (published?.versionNumber ?? tip.versionNumber),
@@ -253,6 +263,31 @@ async function saveDraftMock(id: string, input: SaveDraftInput): Promise<Templat
   return updatedVersion
 }
 
+function demoteSiblingPublishedMocks(
+  bundles: TemplateBundle[],
+  published: Template,
+  publishedAt: string,
+): TemplateBundle[] {
+  return bundles.map((item) => {
+    if (item.template.id === published.id) return item
+    if (item.template.status === 'archived') return item
+    if ((item.template.nit ?? '') !== (published.nit ?? '')) return item
+    if (item.template.documentType !== published.documentType) return item
+
+    let changed = false
+    const versions = item.versions.map((version) => {
+      if (versionStatusOf(version) !== 'published') return version
+      changed = true
+      return { ...version, isPublished: false, status: 'used' as const }
+    })
+    if (!changed) return item
+
+    const next: TemplateBundle = { template: item.template, versions }
+    next.template = { ...syncTemplateMeta(next), updatedAt: publishedAt }
+    return next
+  })
+}
+
 async function publishTemplateMock(id: string): Promise<TemplateVersion> {
   await delay()
   const bundles = readStore()
@@ -267,6 +302,8 @@ async function publishTemplateMock(id: string): Promise<TemplateVersion> {
   const publishedAt = new Date().toISOString()
 
   if (tipStatus === 'published') {
+    const nextBundles = demoteSiblingPublishedMocks(bundles, bundle.template, publishedAt)
+    writeStore(nextBundles)
     return tip
   }
   if (tipStatus === 'used') {
@@ -291,8 +328,9 @@ async function publishTemplateMock(id: string): Promise<TemplateVersion> {
     }),
   }
   nextBundle.template = { ...syncTemplateMeta(nextBundle), updatedAt: publishedAt }
-  bundles[index] = nextBundle
-  writeStore(bundles)
+  const withSelf = [...bundles]
+  withSelf[index] = nextBundle
+  writeStore(demoteSiblingPublishedMocks(withSelf, nextBundle.template, publishedAt))
   return publishedVersion
 }
 
@@ -460,7 +498,12 @@ export async function deleteTemplate(id: string, nit: string): Promise<void> {
 /** Hard-delete is only safe for never-published drafts. */
 export function canHardDeleteTemplate(template: Template): boolean {
   const published = template.publishedVersionNumber ?? 0
-  return template.status !== 'published' && published === 0
+  return (
+    template.status !== 'published' &&
+    template.status !== 'used' &&
+    template.status !== 'archived' &&
+    published === 0
+  )
 }
 
 async function rollbackVersionMock(
@@ -475,7 +518,10 @@ async function rollbackVersionMock(
   let versions = [...bundle.versions]
   const target = versions.find((v) => v.versionNumber === versionNumber)
   if (!target) throw new Error(`No existe la versión ${versionNumber}.`)
-  if (versionStatusOf(target) === 'published') return target
+  if (versionStatusOf(target) === 'published') {
+    writeStore(demoteSiblingPublishedMocks(bundles, bundle.template, new Date().toISOString()))
+    return target
+  }
   if (versionStatusOf(target) !== 'used') {
     throw new Error('Solo se puede volver a una versión usada (ya publicada antes).')
   }
@@ -499,8 +545,9 @@ async function rollbackVersionMock(
 
   const nextBundle: TemplateBundle = { template: bundle.template, versions }
   nextBundle.template = { ...syncTemplateMeta(nextBundle), updatedAt: publishedAt }
-  bundles[index] = nextBundle
-  writeStore(bundles)
+  const withSelf = [...bundles]
+  withSelf[index] = nextBundle
+  writeStore(demoteSiblingPublishedMocks(withSelf, nextBundle.template, publishedAt))
   return versions.find((v) => v.versionNumber === versionNumber)!
 }
 
@@ -542,10 +589,16 @@ export function describeTemplateStatus(template: Template): string {
     if (published > 0) {
       return `Publicada v${published} · borrador v${template.currentVersionNumber}`
     }
+    if (template.status === 'used') {
+      return `Usada · borrador v${template.currentVersionNumber}`
+    }
     return `Borrador · v${template.currentVersionNumber}`
   }
   if (template.status === 'published' && published > 0) {
     return `Publicada · v${published}`
+  }
+  if (template.status === 'used') {
+    return `Usada · v${template.currentVersionNumber}`
   }
   return `Borrador · v${template.currentVersionNumber}`
 }
