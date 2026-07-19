@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { Badge } from '@/shared/ui/Badge'
 import { Button } from '@/shared/ui/Button'
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { useToast } from '@/shared/ui/Toast'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -53,6 +54,12 @@ const DOCUMENT_TYPES = Object.keys(typeLabel) as DocumentType[]
 
 type TypeFilter = 'all' | DocumentType
 
+type PendingDestructive = {
+  kind: 'archive' | 'delete'
+  id: string
+  name: string
+}
+
 export function TemplateListPage() {
   const navigate = useNavigate()
   const toast = useToast()
@@ -71,6 +78,9 @@ export function TemplateListPage() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [exportingId, setExportingId] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [pendingDestructive, setPendingDestructive] = useState<PendingDestructive | null>(
+    null,
+  )
 
   const filtered = useMemo(() => {
     if (!data) return []
@@ -183,45 +193,42 @@ export function TemplateListPage() {
     setTypeFilter('all')
   }
 
-  async function handleArchive(templateId: string, templateName: string) {
+  function requestArchive(templateId: string, templateName: string) {
     if (!companyNit) {
       toast.push('Inicia sesión para archivar plantillas.', 'error')
       return
     }
-    const confirmed = window.confirm(
-      `¿Archivar «${templateName}»?\n\nDejará de aparecer en el catálogo y no se usará en PDFs nuevos. Las facturas ya graficadas seguirán usando su versión pineada.`,
-    )
-    if (!confirmed) return
-    try {
-      setBusyId(templateId)
-      await archiveMutation.mutateAsync(templateId)
-      toast.push(`Archivamos «${templateName}»`, 'success')
-    } catch (error) {
-      toast.push(
-        error instanceof Error ? error.message : 'No pudimos archivar la plantilla',
-        'error',
-      )
-    } finally {
-      setBusyId(null)
-    }
+    setPendingDestructive({ kind: 'archive', id: templateId, name: templateName })
   }
 
-  async function handleDelete(templateId: string, templateName: string) {
+  function requestDelete(templateId: string, templateName: string) {
     if (!companyNit) {
       toast.push('Inicia sesión para eliminar plantillas.', 'error')
       return
     }
-    const confirmed = window.confirm(
-      `¿Eliminar «${templateName}» de forma permanente?\n\nSolo es posible si nunca se publicó y no hay facturas vinculadas.`,
-    )
-    if (!confirmed) return
+    setPendingDestructive({ kind: 'delete', id: templateId, name: templateName })
+  }
+
+  async function confirmDestructive() {
+    if (!pendingDestructive || !companyNit) return
+    const { kind, id, name } = pendingDestructive
     try {
-      setBusyId(templateId)
-      await deleteMutation.mutateAsync(templateId)
-      toast.push(`Eliminamos «${templateName}»`, 'success')
+      setBusyId(id)
+      if (kind === 'archive') {
+        await archiveMutation.mutateAsync(id)
+        toast.push(`Archivamos «${name}»`, 'success')
+      } else {
+        await deleteMutation.mutateAsync(id)
+        toast.push(`Eliminamos «${name}»`, 'success')
+      }
+      setPendingDestructive(null)
     } catch (error) {
       toast.push(
-        error instanceof Error ? error.message : 'No pudimos eliminar la plantilla',
+        error instanceof Error
+          ? error.message
+          : kind === 'archive'
+            ? 'No pudimos archivar la plantilla'
+            : 'No pudimos eliminar la plantilla',
         'error',
       )
     } finally {
@@ -426,7 +433,7 @@ export function TemplateListPage() {
                       disabled={busyId === template.id}
                       aria-label={`Eliminar ${template.name}`}
                       title="Eliminar plantilla sin uso"
-                      onClick={() => void handleDelete(template.id, template.name)}
+                      onClick={() => requestDelete(template.id, template.name)}
                     >
                       <Trash2 size={14} aria-hidden />
                       Eliminar
@@ -438,7 +445,7 @@ export function TemplateListPage() {
                       disabled={busyId === template.id}
                       aria-label={`Archivar ${template.name}`}
                       title="Archivar: oculta del catálogo sin romper facturas pineadas"
-                      onClick={() => void handleArchive(template.id, template.name)}
+                      onClick={() => requestArchive(template.id, template.name)}
                     >
                       <Archive size={14} aria-hidden />
                       Archivar
@@ -466,6 +473,30 @@ export function TemplateListPage() {
         defaultName={importName}
         onClose={closeImportDialog}
         onImport={(name) => void handleConfirmImport(name)}
+      />
+
+      <ConfirmDialog
+        open={Boolean(pendingDestructive)}
+        title={
+          pendingDestructive?.kind === 'delete'
+            ? 'Eliminar plantilla'
+            : 'Archivar plantilla'
+        }
+        description={
+          pendingDestructive?.kind === 'delete'
+            ? `¿Eliminar «${pendingDestructive.name}» de forma permanente? Solo es posible si nunca se publicó y no hay facturas vinculadas.`
+            : pendingDestructive
+              ? `¿Archivar «${pendingDestructive.name}»? Dejará de aparecer en el catálogo y no se usará en PDFs nuevos. Las facturas ya graficadas seguirán usando su versión pineada.`
+              : ''
+        }
+        confirmLabel={pendingDestructive?.kind === 'delete' ? 'Eliminar' : 'Archivar'}
+        cancelLabel="Cancelar"
+        danger
+        busy={Boolean(pendingDestructive && busyId === pendingDestructive.id)}
+        onCancel={() => {
+          if (!busyId) setPendingDestructive(null)
+        }}
+        onConfirm={() => void confirmDestructive()}
       />
     </section>
   )
