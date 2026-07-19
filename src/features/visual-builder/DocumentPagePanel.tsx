@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import {
+  MAX_BOTTOM_MARGIN_MM,
   PAGE_FONT_SIZE_MAX,
   PAGE_FONT_SIZE_MIN,
   PAGE_SIZE_PRESETS,
@@ -243,14 +244,17 @@ export function DocumentPagePanel({
               <input
                 type="number"
                 min={0}
-                max={80}
+                max={MAX_BOTTOM_MARGIN_MM}
                 value={page.margins.bottom}
                 onChange={(event) =>
                   onChange({
                     ...page,
                     margins: {
                       ...page.margins,
-                      bottom: Math.max(0, Number(event.target.value) || 0),
+                      bottom: Math.min(
+                        MAX_BOTTOM_MARGIN_MM,
+                        Math.max(0, Number(event.target.value) || 0),
+                      ),
                     },
                   })
                 }

@@ -52,6 +52,11 @@ export const PAGE_FONT_SIZE_MIN = 8
 export const PAGE_FONT_SIZE_MAX = 72
 export const DEFAULT_FONT_SIZE_LARGE_PX = 9
 export const DEFAULT_FONT_SIZE_SMALL_PX = 8
+/** Dedicated size for bottom margin band text (smaller than document small). */
+export const DEFAULT_BOTTOM_MARGIN_TEXT_FONT_SIZE_PX = 7
+/** Default / UI max for the bottom page margin (two-line copyright). */
+export const DEFAULT_BOTTOM_MARGIN_MM = 9
+export const MAX_BOTTOM_MARGIN_MM = 9
 
 /** Default left-margin band for new templates (single line). */
 export const DEFAULT_LEFT_MARGIN_TEXT =
@@ -80,10 +85,10 @@ export function defaultPageSettings(): PageSettings {
     heightMm: 279,
     orientation: 'vertical',
     /**
-     * Bottom is taller so the default two-line copyright fits.
+     * Bottom is taller so the default two-line copyright fits (max 9 mm).
      * Left stays 5 mm; vertical text uses absolute + rotate (overflow visible).
      */
-    margins: { top: 5, right: 5, bottom: 8, left: 5 },
+    margins: { top: 5, right: 5, bottom: DEFAULT_BOTTOM_MARGIN_MM, left: 5 },
     marginTexts: defaultMarginTexts(),
     background: '#ffffff',
     defaultFontSizeLarge: DEFAULT_FONT_SIZE_LARGE_PX,
@@ -155,6 +160,8 @@ export function normalizePageSettings(
 
   const margin = (value: number | undefined, fallback: number) =>
     typeof value === 'number' && Number.isFinite(value) ? Math.max(0, value) : fallback
+  const bottomMargin = (value: number | undefined, fallback: number) =>
+    Math.min(MAX_BOTTOM_MARGIN_MM, margin(value, fallback))
 
   return {
     sizeId,
@@ -164,7 +171,7 @@ export function normalizePageSettings(
     margins: {
       top: margin(partial?.margins?.top, base.margins.top),
       right: margin(partial?.margins?.right, base.margins.right),
-      bottom: margin(partial?.margins?.bottom, base.margins.bottom),
+      bottom: bottomMargin(partial?.margins?.bottom, base.margins.bottom),
       left: margin(partial?.margins?.left, base.margins.left),
     },
     marginTexts: normalizeMarginTexts(
@@ -329,6 +336,7 @@ html, body {
   height: ${margins.bottom}mm;
   padding-top: ${padAcrossMm}mm;
   padding-bottom: ${padAcrossMm}mm;
+  font-size: ${DEFAULT_BOTTOM_MARGIN_TEXT_FONT_SIZE_PX}px;
 }
 .page-margin-text--top .page-margin-text__inner,
 .page-margin-text--bottom .page-margin-text__inner {
