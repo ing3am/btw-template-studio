@@ -58,6 +58,14 @@ function formatBoundAt(value: string | null | undefined): string {
   })
 }
 
+function sameTemplateId(
+  a: string | null | undefined,
+  b: string | null | undefined,
+): boolean {
+  if (!a || !b) return false
+  return a.trim().toLowerCase() === b.trim().toLowerCase()
+}
+
 export function GeneratePdfWizard({
   open,
   row,
@@ -77,6 +85,10 @@ export function GeneratePdfWizard({
   const [error, setError] = useState<string | null>(null)
   const [pdfBase64, setPdfBase64] = useState<string | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
+  const [resultTemplateId, setResultTemplateId] = useState<string | null>(null)
+  const [resultTemplateVersion, setResultTemplateVersion] = useState<
+    number | null
+  >(null)
 
   const previewUrl = useMemo(
     () => (pdfBase64 ? pdfBase64ToObjectUrl(pdfBase64) : null),
@@ -103,6 +115,8 @@ export function GeneratePdfWizard({
     setError(null)
     setPdfBase64(null)
     setFileName(null)
+    setResultTemplateId(null)
+    setResultTemplateVersion(null)
   }, [])
 
   const close = useCallback(() => {
@@ -111,30 +125,112 @@ export function GeneratePdfWizard({
     onClose()
   }, [busy, onClose, reset])
 
+  const applyResultMeta = useCallback(
+    (
+      result: Awaited<ReturnType<typeof generatePdfByCufe>>,
+      options?: { replaceBinding?: boolean },
+    ) => {
+      setResultTemplateId(result.templateId)
+      setResultTemplateVersion(result.templateVersion)
+
+      if (options?.replaceBinding === true || result.bindingReplaced) {
+        setBinding({
+          exists: true,
+          nit: result.nit,
+          cufe: result.cufe,
+          documentType: result.documentType,
+          templateId: result.templateId,
+          templateVersion: result.templateVersion,
+          boundAt: new Date().toISOString(),
+        })
+        return
+      }
+
+      if (!options?.replaceBinding) {
+        setBinding((prev) => {
+          if (prev?.exists) return prev
+          return {
+            exists: true,
+            nit: result.nit,
+            cufe: result.cufe,
+            documentType: result.documentType,
+            templateId: result.templateId,
+            templateVersion: result.templateVersion,
+            boundAt: new Date().toISOString(),
+          }
+        })
+      }
+    },
+    [],
+  )
+
   const runGenerate = useCallback(
     async (options?: { templateId?: string; replaceBinding?: boolean }) => {
       if (!row?.cufe || !nit) return
+
+      const requestedTemplateId = options?.templateId?.trim() || undefined
+      if (options?.replaceBinding === true && !requestedTemplateId) {
+        const message =
+          'Selecciona una plantilla antes de reemplazar el binding.'
+        setError(message)
+        setStep('error')
+        toast.push(message, 'error')
+        return
+      }
+
       setStep('generating')
       setError(null)
       setPdfBase64(null)
       setFileName(null)
+      setResultTemplateId(null)
+      setResultTemplateVersion(null)
       try {
         const result = await generatePdfByCufe({
           nit,
           cufe: row.cufe,
           documentType,
-          templateId: options?.templateId,
+          templateId: requestedTemplateId,
           replaceBinding: options?.replaceBinding,
         })
+
+        // Replace path must not silently fall back to the pinned template.
+        if (options?.replaceBinding === true) {
+          const reusedPin = result.reusedPinnedTemplate === true
+          const wrongTemplate =
+            !!requestedTemplateId &&
+            !sameTemplateId(result.templateId, requestedTemplateId)
+          if (reusedPin || wrongTemplate) {
+            const message =
+              'La API no reemplazó el binding: siguió con la plantilla pinneada. Intenta de nuevo o revisa que la plantilla esté publicada.'
+            setError(message)
+            setStep('error')
+            toast.push(message, 'error')
+            return
+          }
+        }
+
         setPdfBase64(result.pdfBase64)
         setFileName(result.fileName)
+        applyResultMeta(result, options)
         setStep('preview')
+
+        const versionLabel = `v${result.templateVersion}`
+        const plantillaLabel = shortId(result.templateId)
         if (result.bindingReplaced) {
-          toast.push('PDF regenerado y binding actualizado', 'success')
+          toast.push(
+            `PDF regenerado · plantilla ${plantillaLabel} ${versionLabel} (binding actualizado)`,
+            'success',
+          )
         } else if (result.reusedPinnedTemplate) {
-          toast.push('PDF con la versión original', 'success')
+          toast.push(
+            `PDF con la versión original · plantilla ${plantillaLabel} ${versionLabel}`,
+            'success',
+          )
         } else {
-          toast.push('PDF generado', 'success')
+          toast.push(
+            `PDF generado · plantilla ${plantillaLabel} ${versionLabel}`,
+            'success',
+          )
         }
       } catch (err) {
         const message =
@@ -144,7 +240,7 @@ export function GeneratePdfWizard({
         toast.push(message, 'error')
       }
     },
-    [documentType, nit, row, toast],
+    [applyResultMeta, documentType, nit, row, toast],
   )
 
   const loadPublishedTemplates = useCallback(async () => {
@@ -182,6 +278,8 @@ export function GeneratePdfWizard({
     setError(null)
     setPdfBase64(null)
     setFileName(null)
+    setResultTemplateId(null)
+    setResultTemplateVersion(null)
 
     void (async () => {
       try {
@@ -199,8 +297,22 @@ export function GeneratePdfWizard({
             if (cancelled) return
             setPdfBase64(result.pdfBase64)
             setFileName(result.fileName)
+            setResultTemplateId(result.templateId)
+            setResultTemplateVersion(result.templateVersion)
+            setBinding({
+              exists: true,
+              nit: result.nit,
+              cufe: result.cufe,
+              documentType: result.documentType,
+              templateId: result.templateId,
+              templateVersion: result.templateVersion,
+              boundAt: new Date().toISOString(),
+            })
             setStep('preview')
-            toast.push('PDF generado', 'success')
+            toast.push(
+              `PDF generado · plantilla ${shortId(result.templateId)} v${result.templateVersion}`,
+              'success',
+            )
           } catch (err) {
             if (cancelled) return
             const message =
@@ -473,12 +585,14 @@ export function GeneratePdfWizard({
                 <button
                   type="button"
                   className={styles.choiceCard}
-                  onClick={() =>
+                  disabled={!selectedTemplateId}
+                  onClick={() => {
+                    if (!selectedTemplateId) return
                     void runGenerate({
-                      templateId: selectedTemplateId ?? undefined,
+                      templateId: selectedTemplateId,
                       replaceBinding: true,
                     })
-                  }
+                  }}
                 >
                   <RefreshCw size={18} aria-hidden />
                   <strong>Reemplazar el original</strong>
@@ -490,12 +604,14 @@ export function GeneratePdfWizard({
                 <button
                   type="button"
                   className={styles.choiceCard}
-                  onClick={() =>
+                  disabled={!selectedTemplateId}
+                  onClick={() => {
+                    if (!selectedTemplateId) return
                     void runGenerate({
-                      templateId: selectedTemplateId ?? undefined,
+                      templateId: selectedTemplateId,
                       replaceBinding: false,
                     })
-                  }
+                  }}
                 >
                   <FileText size={18} aria-hidden />
                   <strong>Solo generar PDF</strong>
@@ -518,11 +634,18 @@ export function GeneratePdfWizard({
           ) : null}
 
           {step === 'preview' && previewUrl ? (
-            <iframe
-              title="Vista previa PDF"
-              src={previewUrl}
-              className={styles.frame}
-            />
+            <div className={styles.previewWrap}>
+              <div className={styles.previewMeta} aria-live="polite">
+                <span>Plantilla {shortId(resultTemplateId)}</span>
+                <span aria-hidden>·</span>
+                <span>Versión v{resultTemplateVersion ?? '—'}</span>
+              </div>
+              <iframe
+                title="Vista previa PDF"
+                src={previewUrl}
+                className={styles.frame}
+              />
+            </div>
           ) : null}
 
           {step === 'error' ? (

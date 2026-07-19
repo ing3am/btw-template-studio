@@ -558,13 +558,21 @@ export async function generatePdfByCufe(
     )
   }
 
+  const templateId = input.templateId?.trim() || undefined
+  if (input.replaceBinding === true && !templateId) {
+    throw new Error(
+      'Para reemplazar el binding debes indicar la plantilla (templateId).',
+    )
+  }
+
   const body: Record<string, unknown> = {
     nit: input.nit.trim(),
     cufe: input.cufe.trim(),
     documentType: input.documentType ?? 'factura',
   }
-  if (input.templateId?.trim()) {
-    body.templateId = input.templateId.trim()
+  // Always send GUID when the caller chose a template (re-graph override / replace).
+  if (templateId) {
+    body.templateId = templateId
   }
   if (typeof input.replaceBinding === 'boolean') {
     body.replaceBinding = input.replaceBinding
