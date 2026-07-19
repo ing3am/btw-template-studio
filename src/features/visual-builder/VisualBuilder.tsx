@@ -79,9 +79,9 @@ import {
   isEtiquetaDatosBlock,
 } from './dianPresence'
 import {
-  createTemplateAssetFromFile,
   type TemplateAsset,
 } from '@/features/templates/templateAssets'
+import { ImagenPropsPanel } from './ImagenPropsPanel'
 import { extractJsonPaths } from './extractJsonPaths'
 import styles from './VisualBuilder.module.css'
 
@@ -778,151 +778,21 @@ function PropsPanel({
   }
 
   if (selected.type === 'imagen') {
-    const sourceMode =
-      String(selected.props.sourceMode || 'upload') === 'campo'
-        ? 'campo'
-        : 'upload'
-    const assetId = String(selected.props.assetId || '')
-    const currentAsset = assets.find((item) => item.id === assetId)
-    const paths = extractJsonPaths(sampleDataJson)
-
-    async function onUpload(file: File | null) {
-      if (!file || !templateId) return
-      try {
-        const asset = await createTemplateAssetFromFile(templateId, file)
-        onAssetsChange([asset, ...assets])
-        onChangeProps({
-          ...selected.props,
-          sourceMode: 'upload',
-          assetId: asset.id,
-        })
-      } catch (error) {
-        window.alert(
-          error instanceof Error ? error.message : 'No se pudo subir la imagen.',
-        )
-      }
-    }
-
     return (
-      <div className={styles.props}>
-        <h3>Imagen</h3>
-        {insideContainer ? (
-          <CellAlignRow props={selected.props} onChange={onChangeProps} />
-        ) : null}
-        <label className={styles.field}>
-          <span>Origen</span>
-          <select
-            value={sourceMode}
-            onChange={(event) =>
-              onChangeProps({
-                ...selected.props,
-                sourceMode: event.target.value,
-              })
-            }
-          >
-            <option value="upload">Imagen subida</option>
-            <option value="campo">Campo del JSON</option>
-          </select>
-        </label>
-        {sourceMode === 'upload' ? (
-          <>
-            <label className={styles.field}>
-              <span>Subir imagen</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(event) => {
-                  void onUpload(event.target.files?.[0] ?? null)
-                  event.target.value = ''
-                }}
-              />
-            </label>
-            {currentAsset ? (
-              <div className={styles.assetPreview}>
-                <img src={currentAsset.dataUrl} alt={currentAsset.name} />
-                <div className={styles.assetMeta}>
-                  <strong>{currentAsset.name}</strong>
-                  <button
-                    type="button"
-                    className={styles.linkBtn}
-                    onClick={() => {
-                      onAssetsChange(assets.filter((item) => item.id !== currentAsset.id))
-                      onChangeProps({ ...selected.props, assetId: '' })
-                    }}
-                  >
-                    Quitar imagen
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <p className={styles.hint}>Aún no hay imagen en este bloque.</p>
-            )}
-          </>
-        ) : (
-          <label className={styles.field}>
-            <span>Campo JSON (URL de imagen)</span>
-            <select
-              value={String(selected.props.srcPath || '')}
-              onChange={(event) =>
-                onChangeProps({
-                  ...selected.props,
-                  srcPath: event.target.value,
-                })
-              }
-            >
-              <option value="">Selecciona un campo</option>
-              {paths.map((path) => (
-                <option key={path} value={path}>
-                  {path}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        <div className={styles.layoutRow}>
-          <label className={styles.field}>
-            <span>Ancho (px)</span>
-            <input
-              type="number"
-              min={24}
-              value={Number(selected.props.width) || 120}
-              onChange={(event) =>
-                onChangeProps({
-                  ...selected.props,
-                  width: Number(event.target.value) || 120,
-                })
-              }
-            />
-          </label>
-          <label className={styles.field}>
-            <span>Alto (px)</span>
-            <input
-              type="number"
-              min={24}
-              value={Number(selected.props.height) || 120}
-              onChange={(event) =>
-                onChangeProps({
-                  ...selected.props,
-                  height: Number(event.target.value) || 120,
-                })
-              }
-            />
-          </label>
-        </div>
-        <label className={styles.field}>
-          <span>Alineación</span>
-          <select
-            value={String(selected.props.align || 'centro')}
-            onChange={(event) =>
-              onChangeProps({ ...selected.props, align: event.target.value })
-            }
-          >
-            <option value="izquierda">Izquierda</option>
-            <option value="centro">Centro</option>
-            <option value="derecha">Derecha</option>
-          </select>
-        </label>
-      </div>
+      <ImagenPropsPanel
+        selected={selected}
+        insideContainer={insideContainer}
+        sampleDataJson={sampleDataJson}
+        templateId={templateId}
+        assets={assets}
+        onAssetsChange={onAssetsChange}
+        onChangeProps={onChangeProps}
+        cellAlignRow={
+          insideContainer ? (
+            <CellAlignRow props={selected.props} onChange={onChangeProps} />
+          ) : null
+        }
+      />
     )
   }
 

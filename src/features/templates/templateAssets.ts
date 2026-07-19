@@ -1,15 +1,16 @@
-/** Template-scoped binary assets (logos, etc.). Source of truth is the API (AssetsJson). */
+/** Template-scoped asset refs. Binaries live in brand library; draft only sends ids. */
+
+import { brandAssetAbsoluteUrl } from './brandAssetsApi'
 
 export type TemplateAsset = {
   id: string
   templateId: string
   name: string
   mime: string
+  /** Preview URL: brand content endpoint or data URL (legacy). */
   dataUrl: string
   createdAt: string
 }
-
-const MAX_BYTES = 1.5 * 1024 * 1024
 
 export function parseAssetsJson(
   templateId: string,
@@ -26,27 +27,33 @@ export function parseAssetsJson(
     }>
     if (!Array.isArray(parsed)) return []
     return parsed
-      .filter((item) => item?.id && item?.dataUrl)
-      .map((item) => ({
-        id: String(item.id),
-        templateId,
-        name: item.name || 'imagen',
-        mime: item.mime || 'image/png',
-        dataUrl: String(item.dataUrl),
-        createdAt: item.createdAt || new Date().toISOString(),
-      }))
+      .filter((item) => item?.id)
+      .map((item) => {
+        const id = String(item.id)
+        const dataUrl = item.dataUrl
+          ? String(item.dataUrl)
+          : brandAssetAbsoluteUrl(`/api/v1/brand-assets/${id}/content`)
+        return {
+          id,
+          templateId,
+          name: item.name || 'imagen',
+          mime: item.mime || 'image/png',
+          dataUrl,
+          createdAt: item.createdAt || new Date().toISOString(),
+        }
+      })
   } catch {
     return []
   }
 }
 
+/** Draft payload: ids only (no Base64) to avoid Request Entity Too Large. */
 export function serializeAssetsJson(assets: TemplateAsset[]): string {
   return JSON.stringify(
     assets.map((asset) => ({
       id: asset.id,
       name: asset.name,
       mime: asset.mime,
-      dataUrl: asset.dataUrl,
     })),
   )
 }
@@ -57,38 +64,6 @@ export function assetMapFromList(assets: TemplateAsset[]): Record<string, string
     map[asset.id] = asset.dataUrl
   }
   return map
-}
-
-export async function createTemplateAssetFromFile(
-  templateId: string,
-  file: File,
-): Promise<TemplateAsset> {
-  if (!templateId) throw new Error('Falta el id de la plantilla.')
-  if (!file.type.startsWith('image/')) {
-    throw new Error('Solo se permiten archivos de imagen.')
-  }
-  if (file.size > MAX_BYTES) {
-    throw new Error('La imagen supera 1.5 MB. Usa un archivo más liviano.')
-  }
-
-  const dataUrl = await readFileAsDataUrl(file)
-  return {
-    id: crypto.randomUUID(),
-    templateId,
-    name: file.name || 'imagen',
-    mime: file.type || 'image/png',
-    dataUrl,
-    createdAt: new Date().toISOString(),
-  }
-}
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result || ''))
-    reader.onerror = () => reject(new Error('No se pudo leer el archivo.'))
-    reader.readAsDataURL(file)
-  })
 }
 
 export function qrImageUrlFromPayload(payload: string, size = 200): string {
