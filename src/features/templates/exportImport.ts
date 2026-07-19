@@ -271,16 +271,25 @@ export function prepareImportDraft(payload: TemplateExportV1): {
   }
 }
 
+export type ImportTemplateOptions = {
+  /** Display name chosen in the import dialog; falls back to export name. */
+  name?: string
+}
+
 export async function importTemplateFromExport(
   payload: TemplateExportV1,
   nit: string,
+  options?: ImportTemplateOptions,
 ): Promise<ImportTemplateResult> {
   const prepared = prepareImportDraft(payload)
+  const name = options?.name?.trim() || prepared.createInput.name
   const template = await createTemplate({
     ...prepared.createInput,
+    name,
     nit,
   })
-  await saveDraft(template.id, prepared.draft, nit)
+  // Always persist as draft — never auto-publish on import.
+  await saveDraft(template.id, { ...prepared.draft, status: 'draft' }, nit)
   return { template, warnings: prepared.warnings }
 }
 

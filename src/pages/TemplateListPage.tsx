@@ -21,11 +21,12 @@ import {
   readTemplateExportFile,
 } from '@/features/templates/exportImport'
 import { useCreateTemplate, useImportTemplate, useTemplates } from '@/features/templates/hooks'
-import type { DocumentType } from '@/features/templates/types'
+import type { DocumentType, TemplateExportV1 } from '@/features/templates/types'
 import {
   CreateTemplateDialog,
   type CreateTemplateFormValue,
 } from '@/features/templates/components/CreateTemplateDialog'
+import { ImportTemplateDialog } from '@/features/templates/components/ImportTemplateDialog'
 import styles from './TemplateListPage.module.css'
 
 const typeLabel: Record<DocumentType, string> = {
@@ -49,6 +50,8 @@ export function TemplateListPage() {
   const importMutation = useImportTemplate(companyNit)
   const importInputRef = useRef<HTMLInputElement>(null)
   const [open, setOpen] = useState(false)
+  const [importPayload, setImportPayload] = useState<TemplateExportV1 | null>(null)
+  const [importName, setImportName] = useState('')
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [exportingId, setExportingId] = useState<string | null>(null)
@@ -122,12 +125,30 @@ export function TemplateListPage() {
       return
     }
     const parsed = await readTemplateExportFile(file)
+    if (importInputRef.current) importInputRef.current.value = ''
     if (!parsed.ok) {
       toast.push(parsed.error, 'error')
       return
     }
+    setImportPayload(parsed.data)
+    setImportName(parsed.data.template.name.trim() || 'Plantilla importada')
+  }
+
+  function closeImportDialog() {
+    if (importMutation.isPending) return
+    setImportPayload(null)
+    setImportName('')
+  }
+
+  async function handleConfirmImport(name: string) {
+    if (!importPayload) return
     try {
-      const result = await importMutation.mutateAsync(parsed.data)
+      const result = await importMutation.mutateAsync({
+        payload: importPayload,
+        name,
+      })
+      setImportPayload(null)
+      setImportName('')
       toast.push(`Importamos «${result.template.name}» como borrador`, 'success')
       for (const warning of result.warnings) {
         toast.push(warning, 'info')
@@ -138,8 +159,6 @@ export function TemplateListPage() {
         error instanceof Error ? error.message : 'No pudimos importar la plantilla',
         'error',
       )
-    } finally {
-      if (importInputRef.current) importInputRef.current.value = ''
     }
   }
 
@@ -345,6 +364,14 @@ export function TemplateListPage() {
         razonSocial={session?.razonSocial ?? ''}
         onClose={() => setOpen(false)}
         onCreate={handleCreate}
+      />
+
+      <ImportTemplateDialog
+        open={Boolean(importPayload)}
+        busy={importMutation.isPending}
+        defaultName={importName}
+        onClose={closeImportDialog}
+        onImport={(name) => void handleConfirmImport(name)}
       />
     </section>
   )

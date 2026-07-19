@@ -67,8 +67,8 @@ export function useImportTemplate(nit: string | undefined) {
   const queryClient = useQueryClient()
   const scopedNit = nit?.trim() ?? ''
   return useMutation({
-    mutationFn: (payload: TemplateExportV1) =>
-      importTemplateFromExport(payload, scopedNit),
+    mutationFn: (input: { payload: TemplateExportV1; name: string }) =>
+      importTemplateFromExport(input.payload, scopedNit, { name: input.name }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: keys.list(scopedNit) })
     },
