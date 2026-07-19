@@ -1,12 +1,11 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { FileText, LoaderCircle } from 'lucide-react'
+import { useCompanyNit } from '@/features/auth/AuthProvider'
 import { generatePdfByCufe } from '@/features/templates/api'
 import { Button } from '@/shared/ui/Button'
 import { useToast } from '@/shared/ui/Toast'
 import pageStyles from './Page.module.css'
 import styles from './PdfLabPage.module.css'
-
-const DEFAULT_NIT = '900000000'
 
 function pdfObjectUrl(base64: string): string {
   const binary = atob(base64)
@@ -19,8 +18,8 @@ function pdfObjectUrl(base64: string): string {
 
 export function PdfLabPage() {
   const toast = useToast()
+  const nit = useCompanyNit()
   const [cufe, setCufe] = useState('')
-  const [nit, setNit] = useState(DEFAULT_NIT)
   const [loading, setLoading] = useState(false)
   const [fileName, setFileName] = useState<string | null>(null)
   const [pdfBase64, setPdfBase64] = useState<string | null>(null)
@@ -44,12 +43,16 @@ export function PdfLabPage() {
       setError('Ingresa el CUFE de la factura.')
       return
     }
+    if (!nit) {
+      setError('No hay NIT en la sesión. Vuelve a iniciar sesión.')
+      return
+    }
 
     setLoading(true)
     setError(null)
     try {
       const result = await generatePdfByCufe({
-        nit: nit.trim() || DEFAULT_NIT,
+        nit,
         cufe: trimmed,
         documentType: 'factura',
       })
@@ -76,7 +79,7 @@ export function PdfLabPage() {
           <h1>PDF Lab</h1>
           <p className={pageStyles.lead}>
             Envía el CUFE; el backend consulta el documento, aplica la plantilla
-            publicada y muestra el PDF aquí.
+            publicada de tu empresa y muestra el PDF aquí.
           </p>
         </div>
       </header>
@@ -96,21 +99,14 @@ export function PdfLabPage() {
               />
             </label>
 
-            <label className={styles.fieldCompact}>
-              <span>NIT (plantilla publicada)</span>
-              <input
-                value={nit}
-                onChange={(event) => setNit(event.target.value)}
-                placeholder={DEFAULT_NIT}
-                inputMode="numeric"
-                disabled={loading}
-              />
-            </label>
+            <p className={styles.nitHint}>
+              Empresa · NIT <strong>{nit || '—'}</strong>
+            </p>
 
             <div className={styles.actions}>
               <Button
                 type="submit"
-                disabled={loading || !cufe.trim()}
+                disabled={loading || !cufe.trim() || !nit}
                 icon={
                   loading ? (
                     <LoaderCircle size={16} className={pageStyles.spin} />

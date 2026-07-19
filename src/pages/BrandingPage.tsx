@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ImagePlus, Trash2, LoaderCircle } from 'lucide-react'
+import { useCompanyNit } from '@/features/auth/AuthProvider'
 import {
   BRAND_ASSET_MAX_COUNT,
   brandAssetAbsoluteUrl,
@@ -13,11 +14,9 @@ import { useToast } from '@/shared/ui/Toast'
 import styles from './Page.module.css'
 import brandingStyles from './BrandingPage.module.css'
 
-const DEFAULT_NIT = '900000000'
-
 export function BrandingPage() {
   const toast = useToast()
-  const [nit, setNit] = useState(DEFAULT_NIT)
+  const nit = useCompanyNit()
   const [assets, setAssets] = useState<BrandAsset[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -25,9 +24,15 @@ export function BrandingPage() {
   const atLimit = assets.length >= BRAND_ASSET_MAX_COUNT
 
   const reload = useCallback(async () => {
+    if (!nit) {
+      setAssets([])
+      setLoading(false)
+      toast.push('No hay NIT en la sesión. Vuelve a iniciar sesión.', 'error')
+      return
+    }
     setLoading(true)
     try {
-      const items = await listBrandAssets(nit.trim() || DEFAULT_NIT)
+      const items = await listBrandAssets(nit)
       setAssets(items)
     } catch (error) {
       toast.push(
@@ -46,6 +51,10 @@ export function BrandingPage() {
   async function onUpload(fileList: FileList | null) {
     const file = fileList?.[0]
     if (!file) return
+    if (!nit) {
+      toast.push('No hay NIT en la sesión. Vuelve a iniciar sesión.', 'error')
+      return
+    }
     if (assets.length >= BRAND_ASSET_MAX_COUNT) {
       toast.push(
         `Máximo ${BRAND_ASSET_MAX_COUNT} imágenes. Elimina una para subir otra.`,
@@ -55,7 +64,7 @@ export function BrandingPage() {
     }
     setUploading(true)
     try {
-      await uploadBrandAsset(file, nit.trim() || DEFAULT_NIT)
+      await uploadBrandAsset(file, nit)
       toast.push('Imagen agregada a la biblioteca', 'success')
       await reload()
     } catch (error) {
@@ -105,7 +114,7 @@ export function BrandingPage() {
             type="file"
             accept="image/*"
             hidden
-            disabled={uploading || atLimit}
+            disabled={uploading || atLimit || !nit}
             onChange={(event) => {
               void onUpload(event.target.files)
               event.target.value = ''
@@ -117,15 +126,9 @@ export function BrandingPage() {
       </header>
 
       <div className={brandingStyles.toolbar}>
-        <label className={brandingStyles.nitField}>
-          <span>NIT empresa</span>
-          <input
-            value={nit}
-            onChange={(event) => setNit(event.target.value)}
-            onBlur={() => void reload()}
-            placeholder={DEFAULT_NIT}
-          />
-        </label>
+        <p className={brandingStyles.nitReadonly}>
+          Empresa · NIT <strong>{nit || '—'}</strong>
+        </p>
         <span className={brandingStyles.count}>
           {assets.length}/{BRAND_ASSET_MAX_COUNT}
         </span>

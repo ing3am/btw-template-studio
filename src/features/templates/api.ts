@@ -1,5 +1,6 @@
 ﻿import { createBlankBundle, createSeedBundles } from './seed'
 import { authHeaders, getApiBase, isUsingMocks } from './apiBase'
+import { getSessionNit } from '@/features/auth/api'
 import type {
   CreateTemplateInput,
   SaveDraftInput,
@@ -345,7 +346,7 @@ async function createTemplateApi(input: CreateTemplateInput): Promise<Template> 
     body: JSON.stringify({
       name: input.name,
       documentType: input.documentType,
-      nit: normalizeNit(input.nit),
+      nit: normalizeNit(input.nit) || getSessionNit(),
       sectorSalud: input.sectorSalud ?? false,
       html: version.html,
       css: version.css,

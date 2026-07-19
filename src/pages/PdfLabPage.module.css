@@ -69,6 +69,17 @@
   align-items: center;
 }
 
+.nitHint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.nitHint strong {
+  color: var(--color-ink);
+  font-weight: 650;
+}
+
 .error {
   margin: 0;
   color: var(--color-danger);

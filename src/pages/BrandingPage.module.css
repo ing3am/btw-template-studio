@@ -1,25 +1,20 @@
 .toolbar {
   display: flex;
   gap: 0.85rem;
-  align-items: flex-end;
+  align-items: center;
   margin-bottom: 1.25rem;
   flex-wrap: wrap;
 }
 
-.nitField {
-  display: grid;
-  gap: 0.35rem;
+.nitReadonly {
+  margin: 0;
   font-size: 0.85rem;
   color: var(--color-muted);
 }
 
-.nitField input {
-  min-width: 12rem;
-  padding: 0.45rem 0.65rem;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius);
-  background: var(--color-surface);
-  color: inherit;
+.nitReadonly strong {
+  color: var(--color-ink);
+  font-weight: 650;
 }
 
 .uploadBtn {

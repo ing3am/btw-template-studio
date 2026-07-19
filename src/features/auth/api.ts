@@ -40,6 +40,16 @@ export function clearSession(): void {
   localStorage.removeItem(STORAGE_KEY)
 }
 
+/** Digits-only company NIT from the logged-in StartSesion session (`empresa.nit`). */
+export function getSessionNit(): string {
+  const session = readSession()
+  const digits = (session?.nit || '').replace(/\D/g, '')
+  if (!digits) {
+    throw new Error('No hay NIT de empresa en la sesión. Vuelve a iniciar sesión.')
+  }
+  return digits
+}
+
 type StartSesionUsuario = {
   id?: string
   nit?: string
@@ -113,12 +123,13 @@ function resolveNit(
   usuario?: StartSesionUsuario,
   empresa?: StartSesionEmpresa,
 ): string {
-  const fromEmpresa = empresa?.nit?.trim()
+  // Prefer empresa.nit from StartSesion (source of truth for company scope).
+  const fromEmpresa = empresa?.nit?.replace(/\D/g, '')
   if (fromEmpresa) return fromEmpresa
-  const fromUsuario = usuario?.nit?.trim()
+  const fromUsuario = usuario?.nit?.replace(/\D/g, '')
   if (fromUsuario) return fromUsuario
   const claims = decodeJwtClaims(token)
-  return claims?.company?.trim() || ''
+  return (claims?.company || '').replace(/\D/g, '')
 }
 
 function resolveRazonSocial(empresa?: StartSesionEmpresa): string {
