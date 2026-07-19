@@ -1348,9 +1348,10 @@ export function VisualBuilder({
                       dropHint={dropHint}
                       onSelect={() => setSelectedId(block.id)}
                       onRemove={() => {
-                        const next = removeFromTree(blocks, block.id)
-                        onChange(next)
-                        setSelectedId(next[0]?.id ?? null)
+                        onChange(removeFromTree(blocks, block.id))
+                        // Close props dialog — do not auto-select another block
+                        // (e.g. a sibling contenedor), which felt like a bug.
+                        setSelectedId(null)
                       }}
                     />
                     {block.type === 'contenedor' ? (
@@ -1400,7 +1401,9 @@ export function VisualBuilder({
                                       )
                                     }),
                                   )
-                                  setSelectedId(block.id)
+                                  // Clear selection instead of selecting the parent
+                                  // contenedor (that was opening the Contenedor props modal).
+                                  setSelectedId(null)
                                 }}
                               />
                             ))

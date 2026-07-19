@@ -236,7 +236,8 @@ export function TemplateListPage() {
           <p className={styles.eyebrow}>Catálogo</p>
           <h1 className={styles.title}>Plantillas</h1>
           <p className={styles.lead}>
-            Diseña facturas electrónicas con bloques visuales. El cliente no necesita saber HTML.
+            Crea y ajusta cómo se ven tus facturas. Arrastra lo que necesites y
+            publícalo cuando esté listo.
           </p>
         </div>
         <div className={styles.headerActions}>

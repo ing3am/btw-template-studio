@@ -7,7 +7,6 @@ const links = [
   { to: '/', label: 'Plantillas', end: true },
   { to: '/documentos', label: 'Documentos' },
   { to: '/branding', label: 'Branding' },
-  { to: '/lab', label: 'PDF Lab' },
 ]
 
 export function AppShell() {
