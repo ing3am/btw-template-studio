@@ -271,24 +271,6 @@
   min-height: 0;
 }
 
-.fullState {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  color: var(--color-muted);
-  padding: 2rem 0;
-}
-
-.spin {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .backdrop {
   position: fixed;
   inset: 0;
