@@ -54,17 +54,13 @@ export const DEFAULT_FONT_SIZE_LARGE_PX = 9
 export const DEFAULT_FONT_SIZE_SMALL_PX = 8
 /** Dedicated size for bottom margin band text (smaller than document small). */
 export const DEFAULT_BOTTOM_MARGIN_TEXT_FONT_SIZE_PX = 7
-/** Default / UI max for the bottom page margin (two-line copyright). */
+/** Default / UI max for the bottom page margin (room for optional two-line text). */
 export const DEFAULT_BOTTOM_MARGIN_MM = 9
 export const MAX_BOTTOM_MARGIN_MM = 9
 
 /** Default left-margin band for new templates (single line). */
 export const DEFAULT_LEFT_MARGIN_TEXT =
   'PROVEEDOR TECNOLÓGICO: BTW S.A.S. NIT 900665411 - INFORMACIÓN FACTURACIÓN ERP: NA'
-
-/** Default bottom-margin band for new templates (two lines, centered). */
-export const DEFAULT_BOTTOM_MARGIN_TEXT =
-  '© Copyright 2026. Documento creado por BTW S.A.S proveedor tecnológico de BYTHEWAVE SAS,\nsujeto a condiciones y restricciones.'
 
 export function emptyMarginTexts(): PageMarginTexts {
   return { top: '', right: '', bottom: '', left: '' }
@@ -74,7 +70,6 @@ export function defaultMarginTexts(): PageMarginTexts {
   return {
     ...emptyMarginTexts(),
     left: DEFAULT_LEFT_MARGIN_TEXT,
-    bottom: DEFAULT_BOTTOM_MARGIN_TEXT,
   }
 }
 
@@ -85,7 +80,7 @@ export function defaultPageSettings(): PageSettings {
     heightMm: 279,
     orientation: 'vertical',
     /**
-     * Bottom is taller so the default two-line copyright fits (max 9 mm).
+     * Bottom stays 9 mm for optional two-line margin text (max 9 mm).
      * Left stays 5 mm; vertical text uses absolute + rotate (overflow visible).
      */
     margins: { top: 5, right: 5, bottom: DEFAULT_BOTTOM_MARGIN_MM, left: 5 },
