@@ -80,10 +80,10 @@ export function defaultPageSettings(): PageSettings {
     heightMm: 279,
     orientation: 'vertical',
     /**
-     * Left is wider so default margin text fits after -90deg rotate.
      * Bottom is taller so the default two-line copyright fits.
+     * Left stays 5 mm; vertical text uses absolute + rotate (overflow visible).
      */
-    margins: { top: 5, right: 5, bottom: 8, left: 10 },
+    margins: { top: 5, right: 5, bottom: 8, left: 5 },
     marginTexts: defaultMarginTexts(),
     background: '#ffffff',
     defaultFontSizeLarge: DEFAULT_FONT_SIZE_LARGE_PX,
