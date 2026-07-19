@@ -1,32 +1,32 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
-import { FileText, LoaderCircle } from 'lucide-react'
-import { useCompanyNit } from '@/features/auth/AuthProvider'
+import {
+  Download,
+  ExternalLink,
+  FileText,
+  LoaderCircle,
+  RotateCcw,
+} from 'lucide-react'
+import { useAuth, useCompanyNit } from '@/features/auth/AuthProvider'
 import { generatePdfByCufe } from '@/features/templates/api'
+import { pdfBase64ToObjectUrl } from '@/shared/lib/pdf'
 import { Button } from '@/shared/ui/Button'
+import { EmptyState } from '@/shared/ui/EmptyState'
 import { useToast } from '@/shared/ui/Toast'
-import pageStyles from './Page.module.css'
 import styles from './PdfLabPage.module.css'
-
-function pdfObjectUrl(base64: string): string {
-  const binary = atob(base64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i)
-  }
-  return URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }))
-}
 
 export function PdfLabPage() {
   const toast = useToast()
+  const { session } = useAuth()
   const nit = useCompanyNit()
   const [cufe, setCufe] = useState('')
   const [loading, setLoading] = useState(false)
   const [fileName, setFileName] = useState<string | null>(null)
   const [pdfBase64, setPdfBase64] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [lastCufe, setLastCufe] = useState<string | null>(null)
 
   const previewUrl = useMemo(
-    () => (pdfBase64 ? pdfObjectUrl(pdfBase64) : null),
+    () => (pdfBase64 ? pdfBase64ToObjectUrl(pdfBase64) : null),
     [pdfBase64],
   )
 
@@ -58,6 +58,7 @@ export function PdfLabPage() {
       })
       setPdfBase64(result.pdfBase64)
       setFileName(result.fileName)
+      setLastCufe(trimmed)
       toast.push('PDF generado', 'success')
     } catch (err) {
       const message =
@@ -65,43 +66,78 @@ export function PdfLabPage() {
       setError(message)
       setPdfBase64(null)
       setFileName(null)
+      setLastCufe(null)
       toast.push(message, 'error')
     } finally {
       setLoading(false)
     }
   }
 
+  function clearResult() {
+    setPdfBase64(null)
+    setFileName(null)
+    setLastCufe(null)
+    setError(null)
+  }
+
   return (
-    <section className={`${pageStyles.page} ${styles.lab} pageEnter`}>
-      <header className={pageStyles.header}>
-        <div>
-          <p className={pageStyles.eyebrow}>Prueba con factura real</p>
-          <h1>PDF Lab</h1>
-          <p className={pageStyles.lead}>
-            Envía el CUFE; el backend consulta el documento, aplica la plantilla
-            publicada de tu empresa y muestra el PDF aquí.
+    <section className={styles.page}>
+      <header className={styles.header}>
+        <div className={styles.headerCopy}>
+          <p className={styles.eyebrow}>Prueba con factura real</p>
+          <h1 className={styles.title}>PDF Lab</h1>
+          <p className={styles.lead}>
+            Pega un CUFE, genera el PDF con la plantilla publicada de tu empresa
+            y revísalo aquí antes de usarlo en producción.
           </p>
         </div>
       </header>
 
+      <div className={styles.summary}>
+        <div className={styles.company}>
+          <span className={styles.companyLabel}>Empresa</span>
+          <strong className={styles.companyName}>
+            {session?.razonSocial || 'Sin razón social'}
+          </strong>
+          <span className={styles.companyNit}>NIT {nit || '—'}</span>
+        </div>
+        <div className={styles.hintCard}>
+          <span className={styles.companyLabel}>Cómo funciona</span>
+          <p>
+            El lab consulta el UBL por CUFE, aplica la plantilla publicada de
+            factura y te muestra el resultado listo para descargar.
+          </p>
+        </div>
+      </div>
+
       <div className={styles.workspace}>
-        <div className={styles.controls}>
-          <form className={styles.form} onSubmit={handleSubmit}>
+        <aside className={styles.controls}>
+          <form className={styles.form} onSubmit={(event) => void handleSubmit(event)}>
+            <div className={styles.formHead}>
+              <h2>Generar</h2>
+              <p>Usa el CUFE / CUDE exacto de la factura electrónica.</p>
+            </div>
+
             <label className={styles.field}>
               <span>CUFE</span>
-              <input
+              <textarea
                 value={cufe}
                 onChange={(event) => setCufe(event.target.value)}
-                placeholder="Pega el CUFE / CUDE de la factura"
+                placeholder="Pega aquí el CUFE completo"
                 autoComplete="off"
                 spellCheck={false}
-                disabled={loading}
+                disabled={loading || !nit}
+                rows={4}
               />
             </label>
 
-            <p className={styles.nitHint}>
-              Empresa · NIT <strong>{nit || '—'}</strong>
+            <p className={styles.cufeMeta} aria-live="polite">
+              {cufe.trim().length > 0
+                ? `${cufe.trim().length} caracteres`
+                : 'Sin CUFE aún'}
             </p>
+
+            {error ? <p className={styles.error}>{error}</p> : null}
 
             <div className={styles.actions}>
               <Button
@@ -109,7 +145,7 @@ export function PdfLabPage() {
                 disabled={loading || !cufe.trim() || !nit}
                 icon={
                   loading ? (
-                    <LoaderCircle size={16} className={pageStyles.spin} />
+                    <LoaderCircle size={16} className={styles.spin} />
                   ) : (
                     <FileText size={16} />
                   )
@@ -117,20 +153,55 @@ export function PdfLabPage() {
               >
                 {loading ? 'Generando…' : 'Generar PDF'}
               </Button>
+              {pdfBase64 ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  icon={<RotateCcw size={16} />}
+                  onClick={clearResult}
+                  disabled={loading}
+                >
+                  Limpiar
+                </Button>
+              ) : null}
             </div>
           </form>
-
-          {error ? <p className={styles.error}>{error}</p> : null}
-        </div>
+        </aside>
 
         <div className={styles.previewPanel}>
           {previewUrl ? (
             <>
               <div className={styles.previewMeta}>
-                <span>{fileName ?? 'documento.pdf'}</span>
-                <a href={previewUrl} download={fileName ?? 'fe.pdf'}>
-                  Descargar
-                </a>
+                <div className={styles.previewInfo}>
+                  <strong title={fileName ?? undefined}>
+                    {fileName ?? 'documento.pdf'}
+                  </strong>
+                  {lastCufe ? (
+                    <span title={lastCufe}>
+                      CUFE · {lastCufe.slice(0, 18)}
+                      {lastCufe.length > 18 ? '…' : ''}
+                    </span>
+                  ) : null}
+                </div>
+                <div className={styles.previewActions}>
+                  <a
+                    className={styles.previewLink}
+                    href={previewUrl}
+                    download={fileName ?? 'fe.pdf'}
+                  >
+                    <Download size={15} aria-hidden />
+                    Descargar
+                  </a>
+                  <a
+                    className={styles.previewLink}
+                    href={previewUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <ExternalLink size={15} aria-hidden />
+                    Abrir
+                  </a>
+                </div>
               </div>
               <iframe
                 title="Vista previa PDF"
@@ -138,12 +209,21 @@ export function PdfLabPage() {
                 className={styles.previewFrame}
               />
             </>
+          ) : loading ? (
+            <div className={styles.loadingState}>
+              <LoaderCircle className={styles.spin} size={22} />
+              <p>Generando el PDF con la plantilla publicada…</p>
+            </div>
           ) : (
-            <p className={styles.placeholder}>
-              {loading
-                ? 'Generando el PDF…'
-                : 'La vista previa aparecerá aquí al generar el documento.'}
-            </p>
+            <EmptyState
+              title="Sin vista previa"
+              description={
+                nit
+                  ? 'Genera un PDF con un CUFE válido para verlo aquí.'
+                  : 'Inicia sesión de nuevo para usar el NIT de tu empresa.'
+              }
+              icon={<FileText size={22} />}
+            />
           )}
         </div>
       </div>

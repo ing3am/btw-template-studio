@@ -17,5 +17,7 @@ export type AuthSession = {
   nit: string
   /** Company trade name from StartSesion `empresa.razonSocial`. */
   razonSocial: string
+  /** Company code from StartSesion (e.g. BYTHEWAVE) for DocumentFE APIs. */
+  companyId: string
   loggedInAt: string
 }

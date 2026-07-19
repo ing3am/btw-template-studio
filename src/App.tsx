@@ -6,6 +6,7 @@ import { RequireAuth } from '@/features/auth/RequireAuth'
 import { TemplateListPage } from '@/pages/TemplateListPage'
 import { TemplateEditorPage } from '@/pages/TemplateEditorPage'
 import { BrandingPage } from '@/pages/BrandingPage'
+import { DocumentsPage } from '@/pages/DocumentsPage'
 import { PdfLabPage } from '@/pages/PdfLabPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { ToastProvider } from '@/shared/ui/Toast'
@@ -27,6 +28,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <TemplateListPage /> },
       { path: 'templates/:id/edit', element: <TemplateEditorPage /> },
+      { path: 'documentos', element: <DocumentsPage /> },
       { path: 'branding', element: <BrandingPage /> },
       { path: 'lab', element: <PdfLabPage /> },
       { path: '*', element: <Navigate to="/" replace /> },

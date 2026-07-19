@@ -504,6 +504,8 @@ export type GeneratePdfByCufeInput = {
   nit: string
   cufe: string
   documentType?: string
+  templateId?: string
+  replaceBinding?: boolean
 }
 
 export type GeneratePdfByCufeResult = {
@@ -515,6 +517,33 @@ export type GeneratePdfByCufeResult = {
   contentType: string
   fileName: string
   pdfBase64: string
+  reusedPinnedTemplate?: boolean
+  bindingReplaced?: boolean
+}
+
+export type InvoiceTemplateBinding = {
+  exists: boolean
+  nit: string
+  cufe: string
+  documentType?: string | number | null
+  templateId?: string | null
+  templateVersion?: number | null
+  boundAt?: string | null
+}
+
+export async function getInvoiceTemplateBinding(
+  nit: string,
+  cufe: string,
+): Promise<InvoiceTemplateBinding> {
+  if (useMocks) {
+    return { exists: false, nit: nit.trim(), cufe: cufe.trim() }
+  }
+
+  const params = new URLSearchParams({
+    nit: nit.trim(),
+    cufe: cufe.trim(),
+  })
+  return apiFetch<InvoiceTemplateBinding>(`/pdf/bindings/by-cufe?${params.toString()}`)
 }
 
 export async function generatePdfByCufe(
@@ -526,13 +555,21 @@ export async function generatePdfByCufe(
     )
   }
 
+  const body: Record<string, unknown> = {
+    nit: input.nit.trim(),
+    cufe: input.cufe.trim(),
+    documentType: input.documentType ?? 'factura',
+  }
+  if (input.templateId?.trim()) {
+    body.templateId = input.templateId.trim()
+  }
+  if (typeof input.replaceBinding === 'boolean') {
+    body.replaceBinding = input.replaceBinding
+  }
+
   const result = await apiFetch<GeneratePdfByCufeResult>('/pdf/by-cufe', {
     method: 'POST',
-    body: JSON.stringify({
-      nit: input.nit.trim(),
-      cufe: input.cufe.trim(),
-      documentType: input.documentType ?? 'factura',
-    }),
+    body: JSON.stringify(body),
   })
 
   if (!result?.pdfBase64) {

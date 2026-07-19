@@ -63,3 +63,9 @@ export function useCompanyNit(): string {
   const { session } = useAuth()
   return (session?.nit || '').replace(/\D/g, '')
 }
+
+/** Company code from StartSesion (e.g. BYTHEWAVE). */
+export function useCompanyId(): string {
+  const { session } = useAuth()
+  return session?.companyId?.trim() || ''
+}
