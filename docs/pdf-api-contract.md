@@ -92,7 +92,7 @@ Binding side effects:
 ```json
 {
   "code": "template_not_found",
-  "message": "No published factura template for NIT 900000000.",
+  "message": "No hay plantilla publicada de factura para el NIT 900000000.",
   "traceId": "00-…"
 }
 ```

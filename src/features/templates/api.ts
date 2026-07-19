@@ -414,6 +414,55 @@ export async function deleteDraft(id: string, nit: string): Promise<void> {
   return useMocks ? deleteDraftMock(id) : deleteDraftApi(id, nit)
 }
 
+async function archiveTemplateMock(id: string): Promise<void> {
+  await delay()
+  const bundles = readStore()
+  const index = bundles.findIndex((item) => item.template.id === id)
+  if (index < 0) throw new Error('No encontramos esa plantilla.')
+  bundles.splice(index, 1)
+  writeStore(bundles)
+}
+
+async function archiveTemplateApi(id: string, nit: string): Promise<void> {
+  await apiFetch<void>(withNitQuery(`/templates/${id}/archive`, nit), { method: 'POST' })
+}
+
+export async function archiveTemplate(id: string, nit: string): Promise<void> {
+  return useMocks ? archiveTemplateMock(id) : archiveTemplateApi(id, nit)
+}
+
+async function deleteTemplateMock(id: string): Promise<void> {
+  await delay()
+  const bundles = readStore()
+  const index = bundles.findIndex((item) => item.template.id === id)
+  if (index < 0) throw new Error('No encontramos esa plantilla.')
+  const bundle = bundles[index]
+  const published = bundle.template.publishedVersionNumber ?? 0
+  const hasReleased = bundle.versions.some((v) => {
+    const status = versionStatusOf(v)
+    return status === 'published' || status === 'used'
+  })
+  if (published > 0 || hasReleased || bundle.template.status === 'published') {
+    throw new Error('La plantilla ya fue publicada. Archívala en lugar de eliminarla.')
+  }
+  bundles.splice(index, 1)
+  writeStore(bundles)
+}
+
+async function deleteTemplateApi(id: string, nit: string): Promise<void> {
+  await apiFetch<void>(withNitQuery(`/templates/${id}`, nit), { method: 'DELETE' })
+}
+
+export async function deleteTemplate(id: string, nit: string): Promise<void> {
+  return useMocks ? deleteTemplateMock(id) : deleteTemplateApi(id, nit)
+}
+
+/** Hard-delete is only safe for never-published drafts. */
+export function canHardDeleteTemplate(template: Template): boolean {
+  const published = template.publishedVersionNumber ?? 0
+  return template.status !== 'published' && published === 0
+}
+
 async function rollbackVersionMock(
   id: string,
   versionNumber: number,
