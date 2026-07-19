@@ -13,7 +13,7 @@ import {
 import { useAuth } from '@/features/auth/AuthProvider'
 import { Button } from '@/shared/ui/Button'
 import { useToast } from '@/shared/ui/Toast'
-import loginArt from '@/assets/imglogin.png'
+import loginArt from '@/assets/imgloginred.png'
 import styles from './LoginPage.module.css'
 
 type LocationState = {

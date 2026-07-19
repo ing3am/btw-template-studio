@@ -19,21 +19,14 @@ export function AppShell() {
     navigate('/login', { replace: true })
   }
 
+  const companyName = session?.razonSocial || session?.user.displayName || ''
+
   return (
     <div className={editing ? `${styles.shell} ${styles.shellEditing}` : styles.shell}>
       <header
         className={editing ? `${styles.topbar} ${styles.topbarEditing}` : styles.topbar}
       >
-        <Link to="/" className={styles.brand} aria-label="BTW Template Studio">
-          <span className={styles.brandMark} aria-hidden="true">
-            B
-          </span>
-          <span className={styles.brandName}>
-            <span className={styles.brandProduct}>BTW</span> Template Studio
-          </span>
-        </Link>
-
-        <div className={styles.topbarRight}>
+        <div className={styles.topbarLeft}>
           {!editing ? (
             <nav className={styles.nav} aria-label="Secciones principales">
               {links.map((link) => (
@@ -52,25 +45,29 @@ export function AppShell() {
           ) : (
             <p className={styles.editingHint}>Editor</p>
           )}
+        </div>
 
-          <div className={styles.session}>
-            {!editing && session ? (
-              <span className={styles.userName}>
-                {session.razonSocial || session.user.displayName}
-                {session.nit ? ` · NIT ${session.nit}` : ''}
-              </span>
-            ) : null}
-            <button
-              type="button"
-              className={styles.logout}
-              onClick={handleLogout}
-              aria-label="Cerrar sesión"
-              title="Cerrar sesión"
-            >
-              <LogOut size={15} />
-              {!editing ? <span>Salir</span> : null}
-            </button>
-          </div>
+        <Link to="/" className={styles.brand} aria-label="BTW Template Studio">
+          <span className={styles.brandTitle}>Template Studio</span>
+          <span className={styles.brandSub}>BTW</span>
+        </Link>
+
+        <div className={styles.topbarRight}>
+          {!editing && companyName ? (
+            <span className={styles.userName} title={session?.nit ? `NIT ${session.nit}` : undefined}>
+              {companyName}
+            </span>
+          ) : null}
+          <button
+            type="button"
+            className={styles.logout}
+            onClick={handleLogout}
+            aria-label="Cerrar sesión"
+            title="Cerrar sesión"
+          >
+            <LogOut size={15} aria-hidden />
+            {!editing ? <span>Salir</span> : null}
+          </button>
         </div>
       </header>
       <main className={editing ? styles.mainEditing : styles.main}>
