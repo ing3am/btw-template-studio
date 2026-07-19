@@ -10,150 +10,176 @@
 }
 
 .topbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  gap: 1.25rem;
-  min-height: 3.25rem;
-  padding: 0 1.5rem;
-  border-bottom: 1px solid rgba(228, 226, 222, 0.95);
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(10px);
+  gap: 1rem;
+  min-height: 4rem;
+  padding: 0.65rem 1.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  /* Degradado en rojos de marca, sin tono claro ni negro */
+  background-color: #a5002f;
+  background-image:
+    radial-gradient(
+      ellipse 85% 130% at 15% 50%,
+      rgba(199, 0, 57, 0.55) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 75% 120% at 88% 50%,
+      rgba(111, 0, 34, 0.5) 0%,
+      transparent 60%
+    ),
+    linear-gradient(
+      105deg,
+      #c70039 0%,
+      #a5002f 48%,
+      #8f0029 100%
+    );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 10px 28px rgba(40, 10, 18, 0.28);
   z-index: 5;
 }
 
 .topbarEditing {
-  min-height: 2.75rem;
-  padding: 0 1rem;
+  min-height: 3rem;
+  padding: 0.4rem 1rem;
 }
 
-.brand {
-  display: inline-flex;
+.topbarLeft {
+  display: flex;
   align-items: center;
-  gap: 0.55rem;
+  justify-content: flex-start;
   min-width: 0;
-  color: inherit;
-  text-decoration: none;
-}
-
-.brand:hover .brandName {
-  color: var(--color-ink);
-}
-
-.brandMark {
-  display: grid;
-  place-items: center;
-  width: 1.55rem;
-  height: 1.55rem;
-  border-radius: 0.35rem;
-  background: var(--color-accent);
-  color: #fffcf7;
-  font-family: var(--font-display);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  flex-shrink: 0;
-}
-
-.brandName {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--color-ink);
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: color var(--motion-fast) var(--ease-out);
-}
-
-.brandProduct {
-  font-weight: 700;
 }
 
 .nav {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 0.15rem;
-  height: 100%;
-  min-height: 3.25rem;
 }
 
 .link {
   display: inline-flex;
   align-items: center;
-  padding: 0 0.7rem;
-  border-bottom: 2px solid transparent;
-  color: var(--color-muted);
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  color: rgba(255, 252, 249, 0.78);
+  font-family: var(--font-body);
   font-weight: 500;
-  font-size: 0.84rem;
+  font-size: 0.88rem;
   letter-spacing: 0.01em;
   transition:
     color var(--motion-fast) var(--ease-out),
-    border-color var(--motion-fast) var(--ease-out);
+    background var(--motion-fast) var(--ease-out);
 }
 
 .link:hover {
-  color: var(--color-ink);
+  color: #fffcf9;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .active {
-  color: var(--color-ink);
-  border-bottom-color: var(--color-accent);
+  color: #fffcf9;
   font-weight: 600;
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .editingHint {
   margin: 0;
   font-size: 0.72rem;
   font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 252, 249, 0.7);
+}
+
+.brand {
+  display: grid;
+  justify-items: center;
+  gap: 0.12rem;
+  color: inherit;
+  text-decoration: none;
+  text-align: center;
+  transition: opacity var(--motion-fast) var(--ease-out);
+}
+
+.brand:hover {
+  opacity: 0.88;
+}
+
+.brandTitle {
+  font-family: var(--font-brand);
+  font-size: clamp(1.05rem, 1.7vw, 1.28rem);
+  font-weight: 600;
+  line-height: 1.05;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-muted);
+  color: #fffcf9;
+  white-space: nowrap;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.25);
+}
+
+.brandSub {
+  font-family: var(--font-body);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(255, 220, 228, 0.95);
+  line-height: 1;
 }
 
 .topbarRight {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: flex-end;
+  gap: 0.85rem;
   min-width: 0;
 }
 
-.session {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding-left: 0.65rem;
-  border-left: 1px solid var(--color-line);
-}
-
 .userName {
-  font-size: 0.78rem;
+  max-width: 14rem;
+  font-family: var(--font-body);
+  font-size: 0.86rem;
   font-weight: 500;
-  color: var(--color-muted);
+  color: rgba(255, 252, 249, 0.88);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .logout {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  border: 0;
-  border-radius: 0.4rem;
-  padding: 0.35rem 0.55rem;
-  background: transparent;
-  color: var(--color-muted);
-  font-size: 0.78rem;
+  gap: 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 0.55rem 1.05rem;
+  background: rgba(255, 252, 249, 0.96);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
   font-weight: 600;
+  letter-spacing: 0.01em;
   cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
   transition:
-    color var(--motion-fast) var(--ease-out),
-    background var(--motion-fast) var(--ease-out);
+    background var(--motion-fast) var(--ease-out),
+    border-color var(--motion-fast) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-fast) var(--ease-out);
 }
 
 .logout:hover {
-  color: var(--color-accent);
-  background: var(--color-accent-soft);
+  background: #ffffff;
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.24);
+}
+
+.logout:active {
+  transform: translateY(1px);
 }
 
 .main {
@@ -171,21 +197,42 @@
   overflow: hidden;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 820px) {
   .topbar {
-    padding: 0 1rem;
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+    gap: 0.65rem;
+    padding: 0.75rem 1rem 0.85rem;
   }
 
-  .nav {
-    gap: 0;
+  .topbarLeft,
+  .topbarRight {
+    justify-content: center;
   }
 
-  .link {
-    padding: 0 0.5rem;
+  .brand {
+    order: -1;
+  }
+
+  .userName {
+    max-width: 10rem;
     font-size: 0.8rem;
   }
 
-  .brandName {
-    font-size: 0.88rem;
+  .nav {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand,
+  .link,
+  .logout {
+    transition: none;
+  }
+
+  .logout:active {
+    transform: none;
   }
 }

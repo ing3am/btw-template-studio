@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@500;600;700&family=Poppins:wght@500;600;700&display=swap');
 
 :root {
   /* Fondo limpio (gris cálido, no marfil) */
@@ -22,6 +22,7 @@
   --color-danger: #c70039;
   --color-danger-soft: #fde8ee;
 
+  --font-brand: 'Poppins', 'Segoe UI', sans-serif;
   --font-display: 'Outfit', 'Segoe UI', sans-serif;
   --font-body: 'DM Sans', 'Segoe UI', sans-serif;
 
