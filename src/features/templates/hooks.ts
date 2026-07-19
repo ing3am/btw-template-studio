@@ -82,7 +82,7 @@ export function useSaveDraft(id: string) {
 export function usePublishTemplate(id: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => api.publishTemplate(id),
+    mutationFn: () => api.saveDraft(id, { status: 'published' }),
     onSuccess: async (version) => {
       queryClient.setQueryData<TemplateBundle>(keys.detail(id), (current) =>
         mergeVersionIntoBundle(current, version, {

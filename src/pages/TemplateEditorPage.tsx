@@ -190,6 +190,7 @@ export function TemplateEditorPage() {
       // Keep editor state; cache updates must not wipe assets mid-save.
       skipHydrateRef.current = true
       const version = await saveDraft.mutateAsync({
+        status: 'draft',
         html,
         css,
         schemaJson,

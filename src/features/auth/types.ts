@@ -13,5 +13,7 @@ export type LoginInput = {
 export type AuthSession = {
   user: AuthUser
   token: string
+  /** Company NIT from StartSesion (empresa / usuario). */
+  nit: string
   loggedInAt: string
 }

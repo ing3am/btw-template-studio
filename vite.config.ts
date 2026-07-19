@@ -13,7 +13,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api-auth': {
-        target: 'https://test-apiconnect.febtw.co',
+        target: 'https://test-app.febtw.co',
         changeOrigin: true,
         secure: true,
         rewrite: (path) => path.replace(/^\/api-auth/, ''),

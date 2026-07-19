@@ -148,6 +148,10 @@ async function createTemplateMock(input: CreateTemplateInput): Promise<Template>
 
 async function saveDraftMock(id: string, input: SaveDraftInput): Promise<TemplateVersion> {
   await delay()
+  if ((input.status ?? 'draft') === 'published') {
+    return publishTemplateMock(id)
+  }
+
   const bundles = readStore()
   const index = bundles.findIndex((item) => item.template.id === id)
   if (index < 0) {
@@ -157,6 +161,14 @@ async function saveDraftMock(id: string, input: SaveDraftInput): Promise<Templat
   const bundle = bundles[index]
   const current = latestVersion(bundle)
   const createdAt = new Date().toISOString()
+  const content = {
+    html: input.html ?? current.html,
+    css: input.css ?? current.css,
+    schemaJson: input.schemaJson ?? current.schemaJson,
+    sampleDataJson: input.sampleDataJson ?? current.sampleDataJson,
+    blocksJson: input.blocksJson ?? current.blocksJson,
+    assetsJson: input.assetsJson ?? current.assetsJson,
+  }
 
   // After publish, next save opens a new draft version (v+1).
   if (current.isPublished || bundle.template.status === 'published') {
@@ -164,7 +176,7 @@ async function saveDraftMock(id: string, input: SaveDraftInput): Promise<Templat
       id: crypto.randomUUID(),
       templateId: id,
       versionNumber: current.versionNumber + 1,
-      ...input,
+      ...content,
       createdAt,
       isPublished: false,
     }
@@ -182,7 +194,7 @@ async function saveDraftMock(id: string, input: SaveDraftInput): Promise<Templat
 
   const updatedVersion: TemplateVersion = {
     ...current,
-    ...input,
+    ...content,
     createdAt,
     isPublished: false,
   }
@@ -242,7 +254,7 @@ async function publishTemplateMock(id: string): Promise<TemplateVersion> {
 }
 
 async function listTemplatesApi(): Promise<Template[]> {
-  const items = await apiFetch<Array<Template & { updatedAt: string }>>('/api/v1/templates')
+  const items = await apiFetch<Array<Template & { updatedAt: string }>>('/templates')
   return items.map(normalizeTemplate).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
 }
 
@@ -250,14 +262,14 @@ async function getTemplateBundleApi(id: string): Promise<TemplateBundle> {
   const bundle = await apiFetch<{
     template: Template & { updatedAt: string }
     versions: Array<TemplateVersion & { createdAt: string }>
-  }>(`/api/v1/templates/${id}`)
+  }>(`/templates/${id}`)
   return normalizeBundle(bundle)
 }
 
 async function createTemplateApi(input: CreateTemplateInput): Promise<Template> {
   const blank = createBlankBundle(input.name, input.documentType)
   const version = blank.versions[0]
-  const created = await apiFetch<Template & { updatedAt: string }>('/api/v1/templates', {
+  const created = await apiFetch<Template & { updatedAt: string }>('/templates', {
     method: 'POST',
     body: JSON.stringify({
       name: input.name,
@@ -276,22 +288,22 @@ async function createTemplateApi(input: CreateTemplateInput): Promise<Template> 
 }
 
 async function saveDraftApi(id: string, input: SaveDraftInput): Promise<TemplateVersion> {
+  const { status, ...content } = input
   const version = await apiFetch<TemplateVersion & { createdAt: string }>(
-    `/api/v1/templates/${id}/draft`,
+    `/templates/${id}/draft`,
     {
       method: 'PUT',
-      body: JSON.stringify(input),
+      body: JSON.stringify({
+        status: status ?? 'draft',
+        ...content,
+      }),
     },
   )
   return normalizeVersion(version)
 }
 
 async function publishTemplateApi(id: string): Promise<TemplateVersion> {
-  const version = await apiFetch<TemplateVersion & { createdAt: string }>(
-    `/api/v1/templates/${id}/publish`,
-    { method: 'POST' },
-  )
-  return normalizeVersion(version)
+  return saveDraftApi(id, { status: 'published' })
 }
 
 export async function listTemplates(): Promise<Template[]> {
@@ -348,7 +360,7 @@ export async function generatePdfByCufe(
     )
   }
 
-  const result = await apiFetch<GeneratePdfByCufeResult>('/api/v1/pdf/by-cufe', {
+  const result = await apiFetch<GeneratePdfByCufeResult>('/pdf/by-cufe', {
     method: 'POST',
     body: JSON.stringify({
       nit: input.nit.trim(),

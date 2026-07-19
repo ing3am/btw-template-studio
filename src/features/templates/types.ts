@@ -37,10 +37,12 @@ export type CreateTemplateInput = {
 }
 
 export type SaveDraftInput = {
-  html: string
-  css: string
-  schemaJson: string
-  sampleDataJson: string
-  blocksJson: string
+  /** `draft` = guardar contenido; `published` = publicar tip actual (contenido opcional). */
+  status?: TemplateStatus
+  html?: string
+  css?: string
+  schemaJson?: string
+  sampleDataJson?: string
+  blocksJson?: string
   assetsJson?: string
 }

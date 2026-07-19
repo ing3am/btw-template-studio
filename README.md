@@ -16,7 +16,7 @@ npm run dev
 
 Abre `http://localhost:5173`.
 
-Con `VITE_USE_MOCKS=true` las plantillas viven en `localStorage`. Con `VITE_USE_MOCKS=false` el studio usa `VITE_API_URL` (por defecto `http://localhost:5299` → Btw.TemplatePdf).
+Con `VITE_USE_MOCKS=true` las plantillas viven en `localStorage`. Con `VITE_USE_MOCKS=false` el studio usa `VITE_API_URL` (base `https://premiundev.com/api/v1`).
 
 En el **Preview HTML** del editor puedes acercar/alejar (50%–200%) para revisar detalle del documento. El zoom es solo de vista; no altera el HTML descargado ni lo publicado.
 

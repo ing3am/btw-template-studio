@@ -3,7 +3,7 @@
 set -euo pipefail
 
 DEPLOY_PATH="${DEPLOY_PATH:-/var/www/premiundev}"
-AUTH_HOST="${AUTH_HOST:-test-apiconnect.febtw.co}"
+AUTH_HOST="${AUTH_HOST:-test-app.febtw.co}"
 CONF_DIR="/etc/nginx/conf.d"
 
 echo "→ Finding nginx conf for ${DEPLOY_PATH}"
@@ -46,18 +46,20 @@ block = """
         proxy_read_timeout 30s;
     }
 """
-if marker in text:
-    print("Proxy location already present")
-else:
-    m = re.search(r"\n([ \t]*)location\s+/\s*\{", text)
-    if not m:
-        raise SystemExit("No location / block found")
-    indent = m.group(1)
-    lines = [indent + line.lstrip() if line.strip() else "" for line in block.strip("\n").splitlines()]
-    insert = "\n" + "\n".join(lines) + "\n"
-    text = text[: m.start()] + insert + text[m.start() :]
-    conf.write_text(text)
-    print("Inserted /api-auth/ proxy")
+# Always refresh the block so AUTH_HOST changes apply on redeploy.
+pattern = re.compile(r"\n[ \t]*location /api-auth/\s*\{.*?\}", re.S)
+text, n = pattern.subn("", text)
+if n:
+    print(f"Removed {n} old /api-auth/ block(s)")
+m = re.search(r"\n([ \t]*)location\s+/\s*\{", text)
+if not m:
+    raise SystemExit("No location / block found")
+indent = m.group(1)
+lines = [indent + line.lstrip() if line.strip() else "" for line in block.strip("\n").splitlines()]
+insert = "\n" + "\n".join(lines) + "\n"
+text = text[: m.start()] + insert + text[m.start() :]
+conf.write_text(text)
+print("Inserted /api-auth/ proxy → ${AUTH_HOST}")
 PY
 
 NGINX_PID=""

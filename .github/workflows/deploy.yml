@@ -28,9 +28,10 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_USE_MOCKS: 'true'
-          VITE_API_URL: ''
-          VITE_AUTH_URL: '/api-auth/auth/Authentication'
+          VITE_USE_MOCKS: 'false'
+          VITE_API_URL: 'https://premiundev.com/api/v1'
+          VITE_AUTH_URL: '/api-auth/auth/Autenticacion/StartSesion'
+          VITE_AUTH_AMBIENTE: '02'
 
       - name: Prepare remote folder
         uses: appleboy/ssh-action@v1.2.0
