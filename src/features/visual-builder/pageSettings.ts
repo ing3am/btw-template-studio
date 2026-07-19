@@ -245,6 +245,16 @@ export function buildPageCss(page: PageSettings): string {
   const p = normalizePageSettings(page)
   const { widthMm, heightMm, margins, background } = p
   const small = p.defaultFontSizeSmall
+  /** Inset along the margin strip (from content corners / side edges). */
+  const padAlongMm = 2.5
+  /** Light inset toward page edge and content box (keeps multi-line vertical text in-band). */
+  const padAcrossMm = 1.5
+  const contentHeightMm = Math.max(0, heightMm - margins.top - margins.bottom)
+  const contentWidthMm = Math.max(0, widthMm - margins.left - margins.right)
+  /** Usable length along the vertical margin strip (after left/right rotate). */
+  const verticalRunMm = Math.max(0, contentHeightMm - padAlongMm * 2)
+  /** Usable width for top/bottom horizontal text. */
+  const horizontalRunMm = Math.max(0, contentWidthMm - padAlongMm * 2)
   return `${buildMarker(p)}
 @page {
   size: ${widthMm}mm ${heightMm}mm;
@@ -283,50 +293,69 @@ html, body {
   color: #1c1412;
 }
 .page-margin-text__inner {
-  white-space: nowrap;
-  max-width: 100%;
+  display: block;
+  white-space: pre;
+  text-align: center;
+}
+/* Top / bottom: horizontal, centered in content width */
+.page-margin-text--top,
+.page-margin-text--bottom {
+  left: ${margins.left}mm;
+  right: ${margins.right}mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding-left: ${padAlongMm}mm;
+  padding-right: ${padAlongMm}mm;
 }
 .page-margin-text--top {
   top: 0;
-  left: ${margins.left}mm;
-  right: ${margins.right}mm;
   height: ${margins.top}mm;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+  padding-top: ${padAcrossMm}mm;
+  padding-bottom: ${padAcrossMm}mm;
 }
 .page-margin-text--bottom {
   bottom: 0;
-  left: ${margins.left}mm;
-  right: ${margins.right}mm;
   height: ${margins.bottom}mm;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+  padding-top: ${padAcrossMm}mm;
+  padding-bottom: ${padAcrossMm}mm;
 }
-.page-margin-text--left {
+.page-margin-text--top .page-margin-text__inner,
+.page-margin-text--bottom .page-margin-text__inner {
+  max-width: ${horizontalRunMm}mm;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Left / right: centered in margin band + along content height */
+.page-margin-text--left,
+.page-margin-text--right {
   top: ${margins.top}mm;
   bottom: ${margins.bottom}mm;
-  left: 0;
-  width: ${margins.left}mm;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: ${padAlongMm}mm ${padAcrossMm}mm;
+}
+.page-margin-text--left {
+  left: 0;
+  width: ${margins.left}mm;
+}
+.page-margin-text--right {
+  right: 0;
+  width: ${margins.right}mm;
+}
+.page-margin-text--left .page-margin-text__inner,
+.page-margin-text--right .page-margin-text__inner {
+  /* Do not clamp to band width before rotate — length runs along content height */
+  max-width: ${verticalRunMm}mm;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transform-origin: center center;
 }
 .page-margin-text--left .page-margin-text__inner {
   /* Vertical, reading upward */
   transform: rotate(-90deg);
-}
-.page-margin-text--right {
-  top: ${margins.top}mm;
-  bottom: ${margins.bottom}mm;
-  right: 0;
-  width: ${margins.right}mm;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 .page-margin-text--right .page-margin-text__inner {
   /* Vertical, reading downward */
