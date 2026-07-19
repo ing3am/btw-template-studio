@@ -15,7 +15,7 @@ export const DIAN_SAMPLE_DATA = {
     moneda: 'COP',
     cufe: '8965881bf911dc57cea84f152750c1e996b7a46226269ecf7a004fb039699c13eee099c11cba2b7d8f9f85d96bdffd16',
     qrUrl:
-      'https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey=8965881bf911dc57cea84f152750c1e996b7a46226269ecf7a004fb039699c13eee099c11cba2b7d8f9f85d96bdffd16',
+      'https://catalogo-vpfe-hab.dian.gov.co/document/searchqr?documentkey=8965881bf911dc57cea84f152750c1e996b7a46226269ecf7a004fb039699c13eee099c11cba2b7d8f9f85d96bdffd16',
   },
   emisor: {
     razonSocial: 'Bythewave S.A.S.',

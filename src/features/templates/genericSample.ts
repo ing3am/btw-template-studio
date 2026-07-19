@@ -53,7 +53,7 @@ export function buildGenericEditorSample(options?: {
       fechaVencimiento: '2026-08-17',
       moneda: 'COP',
       cufe: SAMPLE_CUFE,
-      qrUrl: `https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey=${SAMPLE_CUFE}`,
+      qrUrl: `https://catalogo-vpfe-hab.dian.gov.co/document/searchqr?documentkey=${SAMPLE_CUFE}`,
     },
     emisor,
     cliente: {
@@ -85,7 +85,7 @@ export function buildGenericEditorSample(options?: {
       resolucion:
         'Resolución de ejemplo Prefijo DEMO desde 1 hasta 1000',
       cufe: SAMPLE_CUFE,
-      qrUrl: `https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey=${SAMPLE_CUFE}`,
+      qrUrl: `https://catalogo-vpfe-hab.dian.gov.co/document/searchqr?documentkey=${SAMPLE_CUFE}`,
     },
     pago: {
       forma: 'Crédito',
