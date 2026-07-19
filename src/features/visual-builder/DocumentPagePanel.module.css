@@ -1,9 +1,17 @@
 .panel {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* Keep Document open state inside the canvas; body scrolls so all
+     margin text fields (incl. right) stay reachable. */
+  max-height: min(68vh, 34rem);
   border-bottom: 1px solid var(--color-line);
   background: var(--color-bg-accent);
 }
 
 .toggle {
+  flex-shrink: 0;
   width: 100%;
   display: flex;
   align-items: center;
@@ -51,7 +59,12 @@
 }
 
 .body {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 0 0.85rem 0.85rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .grid {
@@ -88,6 +101,7 @@
 .marginTexts {
   margin-top: 0.75rem;
   padding-top: 0.7rem;
+  padding-bottom: 0.15rem;
   border-top: 1px solid var(--color-line);
   display: grid;
   gap: 0.65rem;
