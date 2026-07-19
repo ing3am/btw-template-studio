@@ -9,7 +9,6 @@ import {
   LayoutTemplate,
   History,
   RotateCcw,
-  Download,
 } from 'lucide-react'
 import { buildEditorSnapshot } from '@/features/editor/buildEditorSnapshot'
 import { CodeEditor } from '@/features/editor/CodeEditor'
@@ -423,15 +422,6 @@ export function TemplateEditorPage() {
           <Button
             type="button"
             variant="ghost"
-            icon={<Download size={16} />}
-            title="Descargar JSON de la tip actual (incluye cambios sin guardar)"
-            onClick={handleExport}
-          >
-            Exportar
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
             icon={<Save size={16} />}
             hint="⌘/Ctrl+S"
             disabled={saveDraft.isPending || !canPersist}
@@ -578,10 +568,10 @@ export function TemplateEditorPage() {
             html={debouncedHtml}
             css={debouncedCss}
             sampleDataJson={debouncedSample}
-            templateName={data.template.name}
             assets={Object.fromEntries(
               assets.map((asset) => [asset.id, asset.dataUrl]),
             )}
+            onExport={handleExport}
           />
         </div>
       </div>
