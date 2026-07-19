@@ -26,8 +26,8 @@ export function PdfLabPage() {
   const [lastCufe, setLastCufe] = useState<string | null>(null)
 
   const previewUrl = useMemo(
-    () => (pdfBase64 ? pdfBase64ToObjectUrl(pdfBase64) : null),
-    [pdfBase64],
+    () => (pdfBase64 ? pdfBase64ToObjectUrl(pdfBase64, fileName ?? undefined) : null),
+    [pdfBase64, fileName],
   )
 
   useEffect(() => {

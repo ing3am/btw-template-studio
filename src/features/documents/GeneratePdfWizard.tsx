@@ -91,8 +91,8 @@ export function GeneratePdfWizard({
   >(null)
 
   const previewUrl = useMemo(
-    () => (pdfBase64 ? pdfBase64ToObjectUrl(pdfBase64) : null),
-    [pdfBase64],
+    () => (pdfBase64 ? pdfBase64ToObjectUrl(pdfBase64, fileName ?? undefined) : null),
+    [pdfBase64, fileName],
   )
 
   const busy = step === 'checking' || step === 'generating'
