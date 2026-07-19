@@ -9,6 +9,8 @@ import {
   LayoutTemplate,
   History,
   RotateCcw,
+  Lock,
+  Unlock,
 } from 'lucide-react'
 import { buildEditorSnapshot } from '@/features/editor/buildEditorSnapshot'
 import { CodeEditor } from '@/features/editor/CodeEditor'
@@ -78,6 +80,7 @@ export function TemplateEditorPage() {
 
   const [mode, setMode] = useState<Mode>('visual')
   const [advancedTab, setAdvancedTab] = useState<'html' | 'css' | 'sample'>('sample')
+  const [advancedCodeEditable, setAdvancedCodeEditable] = useState(false)
   const [blocks, setBlocks] = useState<TemplateBlock[]>([])
   const [page, setPage] = useState<PageSettings>(defaultPageSettings)
   const [html, setHtml] = useState('')
@@ -400,7 +403,10 @@ export function TemplateEditorPage() {
             role="tab"
             aria-selected={mode === 'advanced'}
             className={mode === 'advanced' ? styles.modeActive : styles.modeBtn}
-            onClick={() => setMode('advanced')}
+            onClick={() => {
+              setAdvancedCodeEditable(false)
+              setMode('advanced')
+            }}
           >
             <Code2 size={14} />
             Avanzado
@@ -511,27 +517,48 @@ export function TemplateEditorPage() {
             />
           ) : (
             <>
-              <div className={styles.tabs} role="tablist" aria-label="Paneles avanzados">
-                {(
-                  [
-                    ['sample', 'Datos'],
-                    ['html', 'HTML'],
-                    ['css', 'CSS'],
-                  ] as const
-                ).map(([key, label]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    role="tab"
-                    aria-selected={advancedTab === key}
-                    className={
-                      advancedTab === key ? styles.tabActive : styles.tab
-                    }
-                    onClick={() => setAdvancedTab(key)}
-                  >
-                    {label}
-                  </button>
-                ))}
+              <div className={styles.advancedToolbar}>
+                <div className={styles.tabs} role="tablist" aria-label="Paneles avanzados">
+                  {(
+                    [
+                      ['sample', 'Datos'],
+                      ['html', 'HTML'],
+                      ['css', 'CSS'],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      role="tab"
+                      aria-selected={advancedTab === key}
+                      className={
+                        advancedTab === key ? styles.tabActive : styles.tab
+                      }
+                      onClick={() => setAdvancedTab(key)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  icon={
+                    advancedCodeEditable ? (
+                      <Unlock size={14} />
+                    ) : (
+                      <Lock size={14} />
+                    )
+                  }
+                  title={
+                    advancedCodeEditable
+                      ? 'Bloquear edición de código'
+                      : 'Permitir editar el código'
+                  }
+                  onClick={() => setAdvancedCodeEditable((current) => !current)}
+                >
+                  {advancedCodeEditable ? 'Bloquear' : 'Editar código'}
+                </Button>
               </div>
               <div className={styles.editorBody}>
                 {advancedTab === 'sample' ? (
@@ -540,14 +567,16 @@ export function TemplateEditorPage() {
                     language="json"
                     value={sampleDataJson}
                     onChange={setSampleDataJson}
+                    readOnly={!advancedCodeEditable}
                   />
                 ) : null}
                 {advancedTab === 'html' ? (
                   <CodeEditor
-                    label="HTML generado (solo lectura recomendada)"
+                    label="HTML generado"
                     language="html"
                     value={html}
                     onChange={setHtml}
+                    readOnly={!advancedCodeEditable}
                   />
                 ) : null}
                 {advancedTab === 'css' ? (
@@ -556,6 +585,7 @@ export function TemplateEditorPage() {
                     language="css"
                     value={css}
                     onChange={setCss}
+                    readOnly={!advancedCodeEditable}
                   />
                 ) : null}
               </div>
