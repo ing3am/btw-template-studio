@@ -25,6 +25,7 @@ export function readSession(): AuthSession | null {
     return {
       ...parsed,
       nit: parsed.nit?.trim() || '',
+      razonSocial: parsed.razonSocial?.trim() || '',
     }
   } catch {
     return null
@@ -120,6 +121,10 @@ function resolveNit(
   return claims?.company?.trim() || ''
 }
 
+function resolveRazonSocial(empresa?: StartSesionEmpresa): string {
+  return empresa?.razonSocial?.trim() || empresa?.name?.trim() || ''
+}
+
 export async function loginRequest(input: LoginInput): Promise<AuthSession> {
   const username = input.username.trim()
   const password = input.password
@@ -169,6 +174,7 @@ export async function loginRequest(input: LoginInput): Promise<AuthSession> {
     user: buildUser(username, token, result?.usuario, result?.empresa),
     token,
     nit,
+    razonSocial: resolveRazonSocial(result?.empresa),
     loggedInAt: new Date().toISOString(),
   }
 }
