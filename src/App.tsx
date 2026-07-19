@@ -7,7 +7,6 @@ import { TemplateListPage } from '@/pages/TemplateListPage'
 import { TemplateEditorPage } from '@/pages/TemplateEditorPage'
 import { BrandingPage } from '@/pages/BrandingPage'
 import { DocumentsPage } from '@/pages/DocumentsPage'
-import { PdfLabPage } from '@/pages/PdfLabPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { QueryLoadingOverlay } from '@/shared/ui/QueryLoadingOverlay'
 import { ToastProvider } from '@/shared/ui/Toast'
@@ -31,7 +30,7 @@ const router = createBrowserRouter([
       { path: 'templates/:id/edit', element: <TemplateEditorPage /> },
       { path: 'documentos', element: <DocumentsPage /> },
       { path: 'branding', element: <BrandingPage /> },
-      { path: 'lab', element: <PdfLabPage /> },
+      { path: 'lab', element: <Navigate to="/documentos" replace /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },

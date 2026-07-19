@@ -387,7 +387,11 @@ export function GeneratePdfWizard({
         <header className={styles.header}>
           <div className={styles.headerCopy}>
             <p className={styles.eyebrow}>
-              {row.legalNum !== '—' ? row.legalNum : `Factura ${row.numero}`}
+              {row.legalNum !== '—'
+                ? row.legalNum
+                : row.numero !== '—'
+                  ? `Factura ${row.numero}`
+                  : 'Generar por CUFE'}
             </p>
             <h2 id={titleId}>{title}</h2>
             <p className={styles.subtitle} title={row.cufe}>

@@ -11,6 +11,7 @@ import {
   Search,
 } from 'lucide-react'
 import { useAuth, useCompanyId, useCompanyNit } from '@/features/auth/AuthProvider'
+import { GenerateByCufeDialog } from '@/features/documents/GenerateByCufeDialog'
 import { GeneratePdfWizard } from '@/features/documents/GeneratePdfWizard'
 import {
   fetchInvoicesPaginated,
@@ -73,6 +74,24 @@ function hasExistingPdf(row: InvoiceRow): boolean {
   return Boolean(row.pathPdf?.trim())
 }
 
+/** Synthetic row for “Generar por CUFE” without listing the invoice first. */
+function invoiceRowFromCufe(cufe: string): InvoiceRow {
+  const trimmed = cufe.trim()
+  return {
+    id: `cufe:${trimmed}`,
+    numero: '—',
+    legalNum: '—',
+    fecha: '—',
+    cufe: trimmed,
+    cliente: '—',
+    nitCliente: '—',
+    tipo: 'InvoiceType',
+    aceptaDian: null,
+    pathPdf: '',
+    raw: {},
+  }
+}
+
 export function DocumentsPage() {
   const toast = useToast()
   const { session } = useAuth()
@@ -94,14 +113,16 @@ export function DocumentsPage() {
   const [searched, setSearched] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const [cufeDialogOpen, setCufeDialogOpen] = useState(false)
+
   const [pdfOpen, setPdfOpen] = useState(false)
   const [pdfRow, setPdfRow] = useState<InvoiceRow | null>(null)
+  const [pdfDocumentType, setPdfDocumentType] = useState<DocumentType>('factura')
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null)
 
   const fechaFactura = useMemo(() => `${month}-01`, [month])
   const canPrev = pageNumber > 1
   const canNext = pageNumber < totalPages && items.length > 0
-  const pdfDocumentType = pdfRow ? documentTypeFromRow(pdfRow) : 'factura'
 
   const closePdfWizard = useCallback(() => {
     setPdfOpen(false)
@@ -128,7 +149,7 @@ export function DocumentsPage() {
   )
 
   const openPdfWizard = useCallback(
-    (row: InvoiceRow) => {
+    (row: InvoiceRow, documentType?: DocumentType) => {
       if (!nit) {
         toast.push('No hay NIT en la sesión. Vuelve a iniciar sesión.', 'error')
         return
@@ -144,12 +165,18 @@ export function DocumentsPage() {
         toast.push('Esta factura no tiene CUFE para generar el PDF.', 'error')
         return
       }
+      setPdfDocumentType(documentType ?? documentTypeFromRow(row))
       setPdfRow(row)
       setPdfBusyId(row.id)
       setPdfOpen(true)
     },
     [nit, toast],
   )
+
+  function openPdfByCufe(value: { cufe: string; documentType: DocumentType }) {
+    setCufeDialogOpen(false)
+    openPdfWizard(invoiceRowFromCufe(value.cufe), value.documentType)
+  }
 
   const load = useCallback(
     async (page: number) => {
@@ -216,10 +243,23 @@ export function DocumentsPage() {
           <p className={styles.eyebrow}>Facturación electrónica</p>
           <h1 className={styles.title}>Documentos</h1>
           <p className={styles.lead}>
-            Consulta facturas por rango de fechas y número. Genera o re-grafica el
-            PDF con la plantilla publicada usando el CUFE.
+            Busca tus facturas por fecha o número, y genera o vuelve a crear el
+            PDF cuando lo necesites.
           </p>
         </div>
+        {nit ? (
+          <div className={styles.headerActions}>
+            <Button
+              type="button"
+              variant="secondary"
+              icon={<FileText size={16} />}
+              disabled={Boolean(pdfBusyId)}
+              onClick={() => setCufeDialogOpen(true)}
+            >
+              Generar por CUFE
+            </Button>
+          </div>
+        ) : null}
       </header>
 
       <div className={styles.summary}>
@@ -236,8 +276,8 @@ export function DocumentsPage() {
         <div className={styles.hintCard}>
           <span className={styles.label}>Cómo filtrar</span>
           <p>
-            El mes fija el periodo contable. Ajusta «Desde» y «Hasta» para
-            acotar el listado, o busca por número / CUFE.
+            Elige el mes o el rango de fechas. Si conoces el número o el CUFE,
+            también puedes buscarlos aquí.
           </p>
         </div>
       </div>
@@ -494,6 +534,15 @@ export function DocumentsPage() {
           </div>
         </>
       )}
+
+      <GenerateByCufeDialog
+        open={cufeDialogOpen}
+        busy={Boolean(pdfBusyId?.startsWith('cufe:'))}
+        onClose={() => {
+          if (!pdfBusyId?.startsWith('cufe:')) setCufeDialogOpen(false)
+        }}
+        onSubmit={openPdfByCufe}
+      />
 
       <GeneratePdfWizard
         open={pdfOpen}
