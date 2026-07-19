@@ -1,4 +1,5 @@
 ﻿import { createBlankBundle, createSeedBundles } from './seed'
+import { authHeaders, getApiBase, isUsingMocks } from './apiBase'
 import type {
   CreateTemplateInput,
   SaveDraftInput,
@@ -10,8 +11,7 @@ import type {
 /** Bumped after merge: DIAN labels (main) + Seis Amazonas builder (local). */
 const STORAGE_KEY = 'btw-template-studio.templates.v21'
 
-const useMocks = import.meta.env.VITE_USE_MOCKS !== 'false'
-const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+const useMocks = isUsingMocks()
 
 function readStore(): TemplateBundle[] {
   const raw = localStorage.getItem(STORAGE_KEY)
@@ -41,22 +41,8 @@ function latestVersion(bundle: TemplateBundle): TemplateVersion {
   return [...bundle.versions].sort((a, b) => b.versionNumber - a.versionNumber)[0]
 }
 
-function authHeaders(): HeadersInit {
-  try {
-    const raw = localStorage.getItem('btw-template-studio.auth.v1')
-    if (!raw) return {}
-    const session = JSON.parse(raw) as { token?: string }
-    if (!session?.token) return {}
-    return { Authorization: `Bearer ${session.token}` }
-  } catch {
-    return {}
-  }
-}
-
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  if (!apiBase) {
-    throw new Error('VITE_API_URL no está configurada.')
-  }
+  const apiBase = getApiBase()
 
   const response = await fetch(`${apiBase}${path}`, {
     ...init,
@@ -287,9 +273,13 @@ async function saveDraftApi(id: string, input: SaveDraftInput): Promise<Template
 }
 
 async function publishTemplateApi(id: string): Promise<TemplateVersion> {
+  // Backend publishes via draft upsert with status=published (no POST /publish).
   const version = await apiFetch<TemplateVersion & { createdAt: string }>(
-    `/api/v1/templates/${id}/publish`,
-    { method: 'POST' },
+    `/api/v1/templates/${id}/draft`,
+    {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'published' }),
+    },
   )
   return normalizeVersion(version)
 }
@@ -318,9 +308,7 @@ export function getLatestVersion(bundle: TemplateBundle): TemplateVersion {
   return latestVersion(bundle)
 }
 
-export function isUsingMocks(): boolean {
-  return useMocks
-}
+export { isUsingMocks } from './apiBase'
 
 export type GeneratePdfByCufeInput = {
   nit: string
