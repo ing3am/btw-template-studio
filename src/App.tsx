@@ -9,6 +9,7 @@ import { BrandingPage } from '@/pages/BrandingPage'
 import { DocumentsPage } from '@/pages/DocumentsPage'
 import { PdfLabPage } from '@/pages/PdfLabPage'
 import { LoginPage } from '@/pages/LoginPage'
+import { QueryLoadingOverlay } from '@/shared/ui/QueryLoadingOverlay'
 import { ToastProvider } from '@/shared/ui/Toast'
 
 const queryClient = new QueryClient()
@@ -41,6 +42,7 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <AuthProvider>
+          <QueryLoadingOverlay />
           <RouterProvider router={router} />
         </AuthProvider>
       </ToastProvider>

@@ -200,7 +200,6 @@
   padding: 0 0.35rem;
 }
 
-.loading,
 .idle {
   display: flex;
   align-items: center;
@@ -209,9 +208,6 @@
   min-height: 12rem;
   color: var(--color-muted);
   text-align: center;
-}
-
-.idle {
   flex-direction: column;
 }
 

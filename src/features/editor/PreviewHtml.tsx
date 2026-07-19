@@ -2,7 +2,6 @@ import { Download, ZoomIn, ZoomOut } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '@/shared/ui/Button'
 import { buildMarginGuidesCss, parsePageSettingsFromCss } from '@/features/visual-builder/pageSettings'
-import { downloadTemplateHtml } from './downloadTemplateHtml'
 import { renderPreviewHtml } from './renderPreview'
 import styles from './PreviewHtml.module.css'
 
@@ -10,8 +9,8 @@ type PreviewHtmlProps = {
   html: string
   css: string
   sampleDataJson: string
-  templateName?: string
   assets?: Record<string, string>
+  onExport?: () => void
 }
 
 const ZOOM_MIN = 0.5
@@ -28,8 +27,8 @@ export function PreviewHtml({
   html,
   css,
   sampleDataJson,
-  templateName,
   assets,
+  onExport,
 }: PreviewHtmlProps) {
   const [zoom, setZoom] = useState(ZOOM_DEFAULT)
 
@@ -80,22 +79,17 @@ export function PreviewHtml({
               <ZoomIn size={14} />
             </button>
           </div>
-          <Button
-            type="button"
-            variant="secondary"
-            icon={<Download size={14} />}
-            onClick={() =>
-              downloadTemplateHtml({
-                html,
-                css,
-                sampleDataJson,
-                name: templateName,
-                assets,
-              })
-            }
-          >
-            Descargar HTML
-          </Button>
+          {onExport ? (
+            <Button
+              type="button"
+              variant="secondary"
+              icon={<Download size={14} />}
+              title="Descargar JSON de la tip actual (incluye cambios sin guardar)"
+              onClick={onExport}
+            >
+              Exportar
+            </Button>
+          ) : null}
         </div>
       </div>
       <div className={styles.viewport}>

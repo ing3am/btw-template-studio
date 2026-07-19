@@ -1,4 +1,5 @@
 import { getSessionCompanyId, getSessionNit, readSession } from '@/features/auth/api'
+import { withNetworkActivity } from '@/shared/lib/networkActivity'
 
 export type InvoicesQuery = {
   fechaFactura: string
@@ -168,53 +169,55 @@ export async function fetchInvoicesPaginated(
     pageSize: query.pageSize,
   }
 
-  const response = await fetch(INVOICES_PATH, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      Authorization: `Bearer ${session.token}`,
-    },
-    body: JSON.stringify(body),
-  })
+  return withNetworkActivity(async () => {
+    const response = await fetch(INVOICES_PATH, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: `Bearer ${session.token}`,
+      },
+      body: JSON.stringify(body),
+    })
 
-  const rawText = await response.text()
-  let payload: Record<string, unknown> = {}
-  if (rawText.trim()) {
-    try {
-      payload = JSON.parse(rawText) as Record<string, unknown>
-    } catch {
-      throw new Error(
-        rawText.slice(0, 180) || 'Respuesta inválida del servicio de documentos',
-      )
+    const rawText = await response.text()
+    let payload: Record<string, unknown> = {}
+    if (rawText.trim()) {
+      try {
+        payload = JSON.parse(rawText) as Record<string, unknown>
+      } catch {
+        throw new Error(
+          rawText.slice(0, 180) || 'Respuesta inválida del servicio de documentos',
+        )
+      }
     }
-  }
 
-  if (!response.ok || payload.success === false) {
-    const message =
-      pickString(payload, ['message', 'error', 'Message', 'Error']) ||
-      `Error HTTP ${response.status}`
-    throw new Error(message)
-  }
+    if (!response.ok || payload.success === false) {
+      const message =
+        pickString(payload, ['message', 'error', 'Message', 'Error']) ||
+        `Error HTTP ${response.status}`
+      throw new Error(message)
+    }
 
-  const result = extractResult(payload)
-  const rawItems = extractItems(payload)
-  const items = rawItems.map(normalizeRow)
-  const pageSize =
-    pickNumber(result, ['pageSize', 'PageSize']) ?? query.pageSize
-  const pageNumber =
-    pickNumber(result, ['page', 'pageNumber', 'PageNumber']) ?? query.pageNumber
-  const totalCount =
-    pickNumber(result, ['total', 'totalCount', 'TotalCount']) ?? items.length
-  const totalPages =
-    pickNumber(result, ['totalPages', 'TotalPages']) ??
-    Math.max(1, Math.ceil(totalCount / pageSize) || 1)
+    const result = extractResult(payload)
+    const rawItems = extractItems(payload)
+    const items = rawItems.map(normalizeRow)
+    const pageSize =
+      pickNumber(result, ['pageSize', 'PageSize']) ?? query.pageSize
+    const pageNumber =
+      pickNumber(result, ['page', 'pageNumber', 'PageNumber']) ?? query.pageNumber
+    const totalCount =
+      pickNumber(result, ['total', 'totalCount', 'TotalCount']) ?? items.length
+    const totalPages =
+      pickNumber(result, ['totalPages', 'TotalPages']) ??
+      Math.max(1, Math.ceil(totalCount / pageSize) || 1)
 
-  return {
-    items,
-    totalCount,
-    pageNumber,
-    pageSize,
-    totalPages,
-  }
+    return {
+      items,
+      totalCount,
+      pageNumber,
+      pageSize,
+      totalPages,
+    }
+  })
 }

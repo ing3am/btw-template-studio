@@ -1,5 +1,6 @@
 import { authHeaders, getApiBase, isUsingMocks } from './apiBase'
 import { getSessionNit } from '@/features/auth/api'
+import { withNetworkActivity } from '@/shared/lib/networkActivity'
 
 export const BRAND_ASSET_MAX_BYTES = 1.5 * 1024 * 1024
 export const BRAND_ASSET_MAX_COUNT = 5
@@ -52,11 +53,13 @@ export async function listBrandAssets(nit?: string): Promise<BrandAsset[]> {
 
   const base = getApiBase()
   const qs = `?nit=${encodeURIComponent(companyNit)}`
-  const response = await fetch(`${base}/brand-assets${qs}`, {
-    headers: { ...authHeaders() },
+  return withNetworkActivity(async () => {
+    const response = await fetch(`${base}/brand-assets${qs}`, {
+      headers: { ...authHeaders() },
+    })
+    if (!response.ok) throw new Error(`Error HTTP ${response.status}`)
+    return (await response.json()) as BrandAsset[]
   })
-  if (!response.ok) throw new Error(`Error HTTP ${response.status}`)
-  return (await response.json()) as BrandAsset[]
 }
 
 export async function uploadBrandAsset(file: File, nit?: string): Promise<BrandAsset> {
@@ -95,22 +98,24 @@ export async function uploadBrandAsset(file: File, nit?: string): Promise<BrandA
   body.append('file', file)
   body.append('nit', companyNit)
 
-  const response = await fetch(`${base}/brand-assets`, {
-    method: 'POST',
-    headers: { ...authHeaders() },
-    body,
-  })
-  if (!response.ok) {
-    let message = `Error HTTP ${response.status}`
-    try {
-      const json = (await response.json()) as { message?: string }
-      if (json.message) message = json.message
-    } catch {
-      /* ignore */
+  return withNetworkActivity(async () => {
+    const response = await fetch(`${base}/brand-assets`, {
+      method: 'POST',
+      headers: { ...authHeaders() },
+      body,
+    })
+    if (!response.ok) {
+      let message = `Error HTTP ${response.status}`
+      try {
+        const json = (await response.json()) as { message?: string }
+        if (json.message) message = json.message
+      } catch {
+        /* ignore */
+      }
+      throw new Error(message)
     }
-    throw new Error(message)
-  }
-  return (await response.json()) as BrandAsset
+    return (await response.json()) as BrandAsset
+  })
 }
 
 export async function deleteBrandAsset(id: string): Promise<void> {
@@ -120,13 +125,15 @@ export async function deleteBrandAsset(id: string): Promise<void> {
   }
 
   const base = getApiBase()
-  const response = await fetch(`${base}/brand-assets/${id}`, {
-    method: 'DELETE',
-    headers: { ...authHeaders() },
+  return withNetworkActivity(async () => {
+    const response = await fetch(`${base}/brand-assets/${id}`, {
+      method: 'DELETE',
+      headers: { ...authHeaders() },
+    })
+    if (!response.ok && response.status !== 204) {
+      throw new Error(`Error HTTP ${response.status}`)
+    }
   })
-  if (!response.ok && response.status !== 204) {
-    throw new Error(`Error HTTP ${response.status}`)
-  }
 }
 
 function readFileAsDataUrl(file: File): Promise<string> {

@@ -18,6 +18,13 @@
   border-bottom: 1px solid var(--color-line);
 }
 
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .headerCopy {
   display: grid;
   gap: var(--space-2);
@@ -169,21 +176,6 @@
   border: 0;
 }
 
-.loading {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-5);
-  border-radius: var(--radius-lg);
-  background: var(--color-bg-accent);
-  color: var(--color-muted);
-  font-size: 0.95rem;
-}
-
-.spin {
-  animation: spin 0.9s linear infinite;
-}
-
 .grid {
   display: grid;
   gap: var(--space-3);
@@ -219,7 +211,6 @@
   border: 1px solid var(--color-line);
   border-radius: var(--radius);
   background: var(--color-surface);
-  text-decoration: none;
   color: inherit;
   box-shadow: var(--shadow-sm);
   transform: translateY(var(--lift));
@@ -231,16 +222,23 @@
   animation-delay: calc(var(--stagger, 0) * 35ms);
 }
 
-.card:hover,
-.card:focus-visible {
+.card:hover {
   --lift: -3px;
   border-color: color-mix(in srgb, var(--color-accent) 35%, var(--color-line));
   box-shadow: var(--shadow);
-  outline: none;
 }
 
-.card:focus-visible {
-  box-shadow: var(--shadow), 0 0 0 3px var(--color-accent-soft);
+.cardLink {
+  display: grid;
+  gap: var(--space-2);
+  text-decoration: none;
+  color: inherit;
+  outline: none;
+  border-radius: calc(var(--radius) - 2px);
+}
+
+.cardLink:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
 }
 
 .cardTop {
@@ -286,16 +284,48 @@
 }
 
 .cardHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   font-size: 0.74rem;
   font-weight: 600;
   color: var(--color-accent);
   letter-spacing: 0.01em;
+  text-decoration: none;
 }
 
-.card:hover .cardHint,
-.card:focus-visible .cardHint {
+.cardHint:hover,
+.cardHint:focus-visible {
   text-decoration: underline;
   text-underline-offset: 3px;
+  outline: none;
+}
+
+.exportBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0.2rem 0.35rem;
+  border: 0;
+  border-radius: var(--radius-sm, 6px);
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.exportBtn:hover:not(:disabled),
+.exportBtn:focus-visible {
+  color: var(--color-ink);
+  outline: none;
+}
+
+.exportBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 @keyframes pageIn {
@@ -320,12 +350,6 @@
   }
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (max-width: 520px) {
   .grid {
     grid-template-columns: 1fr;
@@ -334,14 +358,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .page,
-  .card,
-  .spin {
+  .card {
     animation: none;
   }
 
   .card,
-  .card:hover,
-  .card:focus-visible {
+  .card:hover {
     --lift: 0px;
     transition: none;
   }

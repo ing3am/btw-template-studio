@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   ImagePlus,
   Images,
-  LoaderCircle,
   RefreshCw,
   Trash2,
 } from 'lucide-react'
@@ -183,13 +182,6 @@ export function BrandingPage() {
           description="Inicia sesión de nuevo para gestionar las imágenes de tu compañía."
           icon={<Images size={22} />}
         />
-      ) : null}
-
-      {nit && loading ? (
-        <div className={styles.loading}>
-          <LoaderCircle className={styles.spin} size={18} />
-          Cargando biblioteca…
-        </div>
       ) : null}
 
       {nit && !loading && assets.length === 0 ? (

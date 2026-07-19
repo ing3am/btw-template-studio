@@ -362,13 +362,6 @@ export function DocumentsPage() {
               ) : null}
             </div>
 
-            {loading ? (
-              <div className={styles.loading}>
-                <LoaderCircle className={styles.spin} size={18} />
-                Consultando documentos…
-              </div>
-            ) : null}
-
             {!loading && searched && items.length === 0 ? (
               <EmptyState
                 title="No encontramos documentos"

@@ -1,6 +1,6 @@
 import { useEffect, useId } from 'react'
 import { createPortal } from 'react-dom'
-import { Download, ExternalLink, FileText, LoaderCircle, X } from 'lucide-react'
+import { Download, ExternalLink, FileText, X } from 'lucide-react'
 import { Button } from './Button'
 import styles from './PdfPreviewModal.module.css'
 
@@ -99,13 +99,6 @@ export function PdfPreviewModal({
         </header>
 
         <div className={styles.body}>
-          {loading ? (
-            <div className={styles.state}>
-              <LoaderCircle className={styles.spin} size={22} />
-              <p>Generando el PDF con la plantilla publicada…</p>
-            </div>
-          ) : null}
-
           {!loading && error ? (
             <div className={styles.state}>
               <FileText size={22} aria-hidden />

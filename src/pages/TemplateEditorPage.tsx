@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useBlocker, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
-  LoaderCircle,
   Save,
   UploadCloud,
   AlertTriangle,
@@ -11,9 +10,14 @@ import {
   History,
   RotateCcw,
 } from 'lucide-react'
+import { buildEditorSnapshot } from '@/features/editor/buildEditorSnapshot'
 import { CodeEditor } from '@/features/editor/CodeEditor'
 import { PreviewHtml } from '@/features/editor/PreviewHtml'
 import { getLatestVersion, describeTemplateStatus } from '@/features/templates/api'
+import {
+  buildTemplateExport,
+  downloadTemplateExport,
+} from '@/features/templates/exportImport'
 import {
   useDeleteDraft,
   usePublishTemplate,
@@ -115,13 +119,13 @@ export function TemplateEditorPage() {
     setSampleDataJson(version.sampleDataJson)
     setAssets(nextAssets)
     setBaseline(
-      JSON.stringify({
-        blocksJson: JSON.stringify(nextBlocks),
+      buildEditorSnapshot({
+        blocks: nextBlocks,
         html: nextHtml,
         css: nextCss,
         schemaJson: version.schemaJson,
         sampleDataJson: version.sampleDataJson,
-        assetsJson: serializeAssetsJson(nextAssets),
+        assets: nextAssets,
       }),
     )
     setStatusText(describeTemplateStatus(data.template))
@@ -147,29 +151,30 @@ export function TemplateEditorPage() {
     [blocks],
   )
 
-  const currentPayload = useMemo(
+  const currentSnapshot = useMemo(
     () =>
-      JSON.stringify({
-        blocksJson: JSON.stringify(blocks),
+      buildEditorSnapshot({
+        blocks,
         html,
         css,
         schemaJson,
         sampleDataJson,
-        assetsJson: serializeAssetsJson(assets),
+        assets,
       }),
     [blocks, html, css, schemaJson, sampleDataJson, assets],
   )
 
-  const dirty = Boolean(baseline) && currentPayload !== baseline
+  const dirty = Boolean(baseline) && currentSnapshot !== baseline
   const blocker = useBlocker(dirty)
   const missingDian = useMemo(() => missingRequiredLabels(blocks), [blocks])
-  const canPersist = missingDian.length === 0
+  const canPersist = dirty && missingDian.length === 0
 
   const debouncedHtml = useDebouncedValue(html)
   const debouncedCss = useDebouncedValue(css)
   const debouncedSample = useDebouncedValue(sampleDataJson)
 
   const handleSave = useCallback(async () => {
+    if (!dirty) return
     if (missingRequiredLabels(blocks).length > 0) {
       toast.push(
         'Completa las etiquetas DIAN obligatorias antes de guardar',
@@ -180,13 +185,13 @@ export function TemplateEditorPage() {
     try {
       setStatusText('Guardando…')
       const assetsJson = serializeAssetsJson(assets)
-      const baselinePayload = JSON.stringify({
-        blocksJson: JSON.stringify(blocks),
+      const nextBaseline = buildEditorSnapshot({
+        blocks,
         html,
         css,
         schemaJson,
         sampleDataJson,
-        assetsJson,
+        assets,
       })
       // Keep editor state; cache updates must not wipe assets mid-save.
       skipHydrateRef.current = true
@@ -199,7 +204,7 @@ export function TemplateEditorPage() {
         blocksJson: JSON.stringify(blocks),
         assetsJson,
       })
-      setBaseline(baselinePayload)
+      setBaseline(nextBaseline)
       hydratedKeyRef.current = `${id}:${version.id}:${version.versionNumber}:draft`
       setStatusText(
         data
@@ -221,6 +226,7 @@ export function TemplateEditorPage() {
     blocks,
     css,
     data,
+    dirty,
     html,
     id,
     sampleDataJson,
@@ -230,6 +236,7 @@ export function TemplateEditorPage() {
   ])
 
   const handlePublish = useCallback(async () => {
+    if (!dirty) return
     if (missingRequiredLabels(blocks).length > 0) {
       toast.push(
         'Completa las etiquetas DIAN obligatorias antes de publicar',
@@ -250,7 +257,7 @@ export function TemplateEditorPage() {
       setStatusText('Error al publicar')
       toast.push('No pudimos publicar la plantilla', 'error')
     }
-  }, [blocks, handleSave, id, publish, toast])
+  }, [blocks, dirty, handleSave, id, publish, toast])
 
   const handleDiscardDraft = useCallback(async () => {
     if (!data?.template.hasDraft) return
@@ -294,6 +301,27 @@ export function TemplateEditorPage() {
     [dirty, rollback, toast],
   )
 
+  const handleExport = useCallback(() => {
+    if (!data) return
+    const tip = getLatestVersion(data)
+    const payload = buildTemplateExport({
+      name: data.template.name,
+      documentType: data.template.documentType,
+      version: {
+        html,
+        css,
+        schemaJson,
+        sampleDataJson,
+        blocksJson: JSON.stringify(blocks),
+        assetsJson: tip.assetsJson,
+      },
+      page,
+      assets,
+    })
+    downloadTemplateExport(payload)
+    toast.push('Plantilla exportada', 'success')
+  }, [assets, blocks, css, data, html, page, sampleDataJson, schemaJson, toast])
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const meta = event.metaKey || event.ctrlKey
@@ -307,12 +335,7 @@ export function TemplateEditorPage() {
   }, [handleSave])
 
   if (isLoading) {
-    return (
-      <div className={styles.fullState}>
-        <LoaderCircle className={styles.spin} size={20} />
-        Cargando editor…
-      </div>
-    )
+    return null
   }
 
   if (isError || !data) {
@@ -403,9 +426,11 @@ export function TemplateEditorPage() {
             hint="⌘/Ctrl+S"
             disabled={saveDraft.isPending || !canPersist}
             title={
-              canPersist
-                ? undefined
-                : `Faltan ${missingDian.length} etiquetas DIAN obligatorias`
+              !dirty
+                ? 'No hay cambios por guardar'
+                : missingDian.length > 0
+                  ? `Faltan ${missingDian.length} etiquetas DIAN obligatorias`
+                  : undefined
             }
             onClick={() => void handleSave()}
           >
@@ -414,11 +439,13 @@ export function TemplateEditorPage() {
           <Button
             type="button"
             icon={<UploadCloud size={16} />}
-            disabled={publish.isPending || !canPersist}
+            disabled={publish.isPending || saveDraft.isPending || !canPersist}
             title={
-              canPersist
-                ? undefined
-                : `Faltan ${missingDian.length} etiquetas DIAN obligatorias`
+              !dirty
+                ? 'No hay cambios por publicar'
+                : missingDian.length > 0
+                  ? `Faltan ${missingDian.length} etiquetas DIAN obligatorias`
+                  : undefined
             }
             onClick={() => void handlePublish()}
           >
@@ -541,10 +568,10 @@ export function TemplateEditorPage() {
             html={debouncedHtml}
             css={debouncedCss}
             sampleDataJson={debouncedSample}
-            templateName={data.template.name}
             assets={Object.fromEntries(
               assets.map((asset) => [asset.id, asset.dataUrl]),
             )}
+            onExport={handleExport}
           />
         </div>
       </div>

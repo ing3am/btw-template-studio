@@ -1,6 +1,7 @@
 ﻿import { createBlankBundle, createSeedBundles } from './seed'
 import { authHeaders, getApiBase, isUsingMocks } from './apiBase'
 import { getSessionNit } from '@/features/auth/api'
+import { withNetworkActivity } from '@/shared/lib/networkActivity'
 import type {
   CreateTemplateInput,
   SaveDraftInput,
@@ -55,33 +56,35 @@ function latestVersion(bundle: TemplateBundle): TemplateVersion {
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const apiBase = getApiBase()
+  return withNetworkActivity(async () => {
+    const apiBase = getApiBase()
 
-  const response = await fetch(`${apiBase}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeaders(),
-      ...(init?.headers ?? {}),
-    },
-  })
+    const response = await fetch(`${apiBase}${path}`, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders(),
+        ...(init?.headers ?? {}),
+      },
+    })
 
-  if (!response.ok) {
-    let message = `Error HTTP ${response.status}`
-    try {
-      const body = (await response.json()) as { message?: string }
-      if (body.message) message = body.message
-    } catch {
-      /* ignore */
+    if (!response.ok) {
+      let message = `Error HTTP ${response.status}`
+      try {
+        const body = (await response.json()) as { message?: string }
+        if (body.message) message = body.message
+      } catch {
+        /* ignore */
+      }
+      throw new Error(message)
     }
-    throw new Error(message)
-  }
 
-  if (response.status === 204) {
-    return undefined as T
-  }
+    if (response.status === 204) {
+      return undefined as T
+    }
 
-  return (await response.json()) as T
+    return (await response.json()) as T
+  })
 }
 
 function versionStatusOf(version: TemplateVersion): VersionStatus {
