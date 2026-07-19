@@ -51,6 +51,11 @@ function dianLabel(acepta: boolean | null): {
   return { text: 'Sin respuesta', tone: 'neutral' }
 }
 
+/** GetInvoicesPaginated: `aceptaDian` / `AceptaDian` — false = rechazada (o no aceptada). */
+function isDianRejected(acepta: boolean | null): boolean {
+  return acepta === false
+}
+
 function documentTypeFromRow(row: InvoiceRow): DocumentType {
   const raw = String(row.raw.tipoFactura || row.tipo || '')
     .replace(/\s+/g, ' ')
@@ -126,6 +131,13 @@ export function DocumentsPage() {
     (row: InvoiceRow) => {
       if (!nit) {
         toast.push('No hay NIT en la sesión. Vuelve a iniciar sesión.', 'error')
+        return
+      }
+      if (isDianRejected(row.aceptaDian)) {
+        toast.push(
+          'No se puede generar PDF de una factura rechazada por la DIAN.',
+          'info',
+        )
         return
       }
       if (!row.cufe || row.cufe === '—') {
@@ -388,8 +400,10 @@ export function DocumentsPage() {
                   <tbody>
                     {items.map((row) => {
                       const dian = dianLabel(row.aceptaDian)
+                      const rejected = isDianRejected(row.aceptaDian)
                       const rowBusy = pdfBusyId === row.id
                       const canGenerate = Boolean(row.cufe && row.cufe !== '—')
+                      const showPdfAction = canGenerate && !rejected
                       const regraph = hasExistingPdf(row)
                       return (
                         <tr key={row.id}>
@@ -435,31 +449,33 @@ export function DocumentsPage() {
                             </div>
                           </td>
                           <td>
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              className={styles.pdfBtn}
-                              disabled={!canGenerate || Boolean(pdfBusyId)}
-                              icon={
-                                rowBusy ? (
-                                  <LoaderCircle
-                                    size={15}
-                                    className={styles.spin}
-                                  />
-                                ) : regraph ? (
-                                  <RefreshCw size={15} />
-                                ) : (
-                                  <FileText size={15} />
-                                )
-                              }
-                              onClick={() => openPdfWizard(row)}
-                            >
-                              {rowBusy
-                                ? 'Abriendo…'
-                                : regraph
-                                  ? 'Re-graficar PDF'
-                                  : 'Generar PDF'}
-                            </Button>
+                            {showPdfAction ? (
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                className={styles.pdfBtn}
+                                disabled={Boolean(pdfBusyId)}
+                                icon={
+                                  rowBusy ? (
+                                    <LoaderCircle
+                                      size={15}
+                                      className={styles.spin}
+                                    />
+                                  ) : regraph ? (
+                                    <RefreshCw size={15} />
+                                  ) : (
+                                    <FileText size={15} />
+                                  )
+                                }
+                                onClick={() => openPdfWizard(row)}
+                              >
+                                {rowBusy
+                                  ? 'Abriendo…'
+                                  : regraph
+                                    ? 'Re-graficar PDF'
+                                    : 'Generar PDF'}
+                              </Button>
+                            ) : null}
                           </td>
                         </tr>
                       )
