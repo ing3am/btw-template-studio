@@ -1,19 +1,41 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   PAGE_FONT_SIZE_MAX,
   PAGE_FONT_SIZE_MIN,
   PAGE_SIZE_PRESETS,
   applyPageOrientation,
   applyPageSizeId,
+  type PageMarginSide,
   type PageSettings,
   type PageSizeId,
 } from './pageSettings'
+import { extractLabelPaths } from './labelFields'
 import styles from './DocumentPagePanel.module.css'
 
 type DocumentPagePanelProps = {
   page: PageSettings
+  sampleDataJson: string
   onChange: (next: PageSettings) => void
 }
+
+const MARGIN_TEXT_SIDES: {
+  side: PageMarginSide
+  label: string
+  hint: string
+}[] = [
+  { side: 'top', label: 'Texto margen superior', hint: 'Horizontal' },
+  { side: 'bottom', label: 'Texto margen inferior', hint: 'Horizontal' },
+  {
+    side: 'left',
+    label: 'Texto margen izquierdo',
+    hint: 'Vertical, lectura hacia arriba',
+  },
+  {
+    side: 'right',
+    label: 'Texto margen derecho',
+    hint: 'Vertical, lectura hacia abajo',
+  },
+]
 
 function sizeLabel(page: PageSettings): string {
   if (page.sizeId === 'custom') return 'Personalizado'
@@ -22,11 +44,73 @@ function sizeLabel(page: PageSettings): string {
 
 function pageSummary(page: PageSettings): string {
   const orient = page.orientation === 'horizontal' ? 'horizontal' : 'vertical'
-  return `${sizeLabel(page)} · ${orient} · ${page.widthMm}×${page.heightMm} mm · ${page.defaultFontSizeLarge}/${page.defaultFontSizeSmall}px`
+  const texts = page.marginTexts
+  const textCount = [texts.top, texts.right, texts.bottom, texts.left].filter(
+    (value) => value.trim(),
+  ).length
+  const textHint = textCount > 0 ? ` · ${textCount} texto(s) margen` : ''
+  return `${sizeLabel(page)} · ${orient} · ${page.widthMm}×${page.heightMm} mm · ${page.defaultFontSizeLarge}/${page.defaultFontSizeSmall}px${textHint}`
 }
 
-export function DocumentPagePanel({ page, onChange }: DocumentPagePanelProps) {
+function insertTokenAtCursor(
+  current: string,
+  token: string,
+  start: number,
+  end: number,
+): { next: string; caret: number } {
+  const before = current.slice(0, start)
+  const after = current.slice(end)
+  const needsSpaceBefore =
+    before.length > 0 && !/\s$/.test(before) && !token.startsWith(' ')
+  const needsSpaceAfter =
+    after.length > 0 && !/^\s/.test(after) && !token.endsWith(' ')
+  const inserted =
+    (needsSpaceBefore ? ' ' : '') + token + (needsSpaceAfter ? ' ' : '')
+  const next = before + inserted + after
+  return { next, caret: before.length + inserted.length }
+}
+
+export function DocumentPagePanel({
+  page,
+  sampleDataJson,
+  onChange,
+}: DocumentPagePanelProps) {
   const [open, setOpen] = useState(false)
+  const paths = extractLabelPaths(sampleDataJson)
+  const textAreaRefs = useRef<
+    Partial<Record<PageMarginSide, HTMLTextAreaElement | null>>
+  >({})
+
+  function updateMarginText(side: PageMarginSide, value: string) {
+    onChange({
+      ...page,
+      marginTexts: {
+        ...page.marginTexts,
+        [side]: value,
+      },
+    })
+  }
+
+  function insertJsonPath(side: PageMarginSide, path: string) {
+    if (!path) return
+    const token = `{{${path}}}`
+    const el = textAreaRefs.current[side]
+    const current = page.marginTexts[side] ?? ''
+    if (!el) {
+      updateMarginText(side, current ? `${current} ${token}` : token)
+      return
+    }
+    const start = el.selectionStart ?? current.length
+    const end = el.selectionEnd ?? current.length
+    const { next, caret } = insertTokenAtCursor(current, token, start, end)
+    updateMarginText(side, next)
+    requestAnimationFrame(() => {
+      const target = textAreaRefs.current[side]
+      if (!target) return
+      target.focus()
+      target.setSelectionRange(caret, caret)
+    })
+  }
 
   return (
     <section className={styles.panel} aria-label="Configuración de página">
@@ -252,6 +336,59 @@ export function DocumentPagePanel({ page, onChange }: DocumentPagePanelProps) {
                 }
               />
             </label>
+          </div>
+
+          <div className={styles.marginTexts}>
+            <h4 className={styles.marginTextsTitle}>Texto en márgenes</h4>
+            <p className={styles.marginTextsHint}>
+              Puede mezclar texto libre e insertar campos del JSON (ej.{' '}
+              <code>{'{{documento.cufe}}'}</code>). Se dibujan en la franja del
+              margen en el preview y el PDF.
+            </p>
+            {MARGIN_TEXT_SIDES.map(({ side, label, hint }) => (
+              <div key={side} className={styles.marginTextBlock}>
+                <label className={styles.fieldWide}>
+                  <span>
+                    {label}{' '}
+                    <em className={styles.sideHint}>({hint})</em>
+                  </span>
+                  <textarea
+                    ref={(node) => {
+                      textAreaRefs.current[side] = node
+                    }}
+                    rows={2}
+                    value={page.marginTexts[side]}
+                    placeholder="Texto libre o campos JSON…"
+                    onChange={(event) =>
+                      updateMarginText(side, event.target.value)
+                    }
+                  />
+                </label>
+                <label className={styles.fieldWide}>
+                  <span>Insertar campo JSON</span>
+                  <select
+                    defaultValue=""
+                    aria-label={`Insertar campo en ${label}`}
+                    onChange={(event) => {
+                      const path = event.target.value
+                      event.target.value = ''
+                      insertJsonPath(side, path)
+                    }}
+                  >
+                    <option value="" disabled>
+                      {paths.length === 0
+                        ? 'Sin campos en el JSON'
+                        : 'Elegir campo…'}
+                    </option>
+                    {paths.map((path) => (
+                      <option key={path} value={path}>
+                        {path}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            ))}
           </div>
         </div>
       ) : null}

@@ -8,12 +8,24 @@ export type PageMarginsMm = {
   left: number
 }
 
+/** Free text + `{{json.path}}` tokens rendered in each margin band. */
+export type PageMarginTexts = {
+  top: string
+  right: string
+  bottom: string
+  left: string
+}
+
+export type PageMarginSide = keyof PageMarginTexts
+
 export type PageSettings = {
   sizeId: PageSizeId
   widthMm: number
   heightMm: number
   orientation: PageOrientation
   margins: PageMarginsMm
+  /** Text drawn in the margin bands (HTML + PDF). */
+  marginTexts: PageMarginTexts
   background: string
   /** Default larger body/label size (px) — same unit as block `fontSizePx`. */
   defaultFontSizeLarge: number
@@ -41,6 +53,10 @@ export const PAGE_FONT_SIZE_MAX = 72
 export const DEFAULT_FONT_SIZE_LARGE_PX = 9
 export const DEFAULT_FONT_SIZE_SMALL_PX = 8
 
+export function emptyMarginTexts(): PageMarginTexts {
+  return { top: '', right: '', bottom: '', left: '' }
+}
+
 export function defaultPageSettings(): PageSettings {
   return {
     sizeId: 'carta',
@@ -48,9 +64,22 @@ export function defaultPageSettings(): PageSettings {
     heightMm: 279,
     orientation: 'vertical',
     margins: { top: 5, right: 5, bottom: 5, left: 5 },
+    marginTexts: emptyMarginTexts(),
     background: '#ffffff',
     defaultFontSizeLarge: DEFAULT_FONT_SIZE_LARGE_PX,
     defaultFontSizeSmall: DEFAULT_FONT_SIZE_SMALL_PX,
+  }
+}
+
+function normalizeMarginTexts(
+  partial?: Partial<PageMarginTexts> | null,
+): PageMarginTexts {
+  const base = emptyMarginTexts()
+  return {
+    top: typeof partial?.top === 'string' ? partial.top : base.top,
+    right: typeof partial?.right === 'string' ? partial.right : base.right,
+    bottom: typeof partial?.bottom === 'string' ? partial.bottom : base.bottom,
+    left: typeof partial?.left === 'string' ? partial.left : base.left,
   }
 }
 
@@ -118,6 +147,9 @@ export function normalizePageSettings(
       bottom: margin(partial?.margins?.bottom, base.margins.bottom),
       left: margin(partial?.margins?.left, base.margins.left),
     },
+    marginTexts: normalizeMarginTexts(
+      partial?.marginTexts ?? base.marginTexts,
+    ),
     background: partial?.background || base.background,
     defaultFontSizeLarge: clampFontSizePx(
       partial?.defaultFontSizeLarge,
@@ -180,13 +212,28 @@ export function applyPageOrientation(
   })
 }
 
+function encodeMarkerText(value: string): string {
+  return encodeURIComponent(value)
+}
+
+function decodeMarkerText(value: string | undefined): string {
+  if (!value) return ''
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
+}
+
 function buildMarker(page: PageSettings): string {
-  return `${PAGE_MARKER}sizeId=${page.sizeId};orientation=${page.orientation};width=${page.widthMm};height=${page.heightMm};mt=${page.margins.top};mr=${page.margins.right};mb=${page.margins.bottom};ml=${page.margins.left};bg=${page.background};fsLarge=${page.defaultFontSizeLarge};fsSmall=${page.defaultFontSizeSmall} */`
+  const t = page.marginTexts
+  return `${PAGE_MARKER}sizeId=${page.sizeId};orientation=${page.orientation};width=${page.widthMm};height=${page.heightMm};mt=${page.margins.top};mr=${page.margins.right};mb=${page.margins.bottom};ml=${page.margins.left};bg=${page.background};fsLarge=${page.defaultFontSizeLarge};fsSmall=${page.defaultFontSizeSmall};txtTop=${encodeMarkerText(t.top)};txtRight=${encodeMarkerText(t.right)};txtBottom=${encodeMarkerText(t.bottom)};txtLeft=${encodeMarkerText(t.left)} */`
 }
 
 export function buildPageCss(page: PageSettings): string {
   const p = normalizePageSettings(page)
   const { widthMm, heightMm, margins, background } = p
+  const small = p.defaultFontSizeSmall
   return `${buildMarker(p)}
 @page {
   size: ${widthMm}mm ${heightMm}mm;
@@ -200,6 +247,7 @@ html, body {
 }
 
 .page {
+  position: relative;
   width: ${widthMm}mm;
   min-height: ${heightMm}mm;
   box-sizing: border-box;
@@ -211,6 +259,67 @@ html, body {
 .page-break {
   page-break-before: always;
   break-before: page;
+}
+
+.page-margin-text {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  box-sizing: border-box;
+  overflow: hidden;
+  font-size: ${small}px;
+  line-height: 1.2;
+  color: #1c1412;
+}
+.page-margin-text__inner {
+  white-space: nowrap;
+  max-width: 100%;
+}
+.page-margin-text--top {
+  top: 0;
+  left: ${margins.left}mm;
+  right: ${margins.right}mm;
+  height: ${margins.top}mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.page-margin-text--bottom {
+  bottom: 0;
+  left: ${margins.left}mm;
+  right: ${margins.right}mm;
+  height: ${margins.bottom}mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.page-margin-text--left {
+  top: ${margins.top}mm;
+  bottom: ${margins.bottom}mm;
+  left: 0;
+  width: ${margins.left}mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.page-margin-text--left .page-margin-text__inner {
+  /* Vertical, reading upward */
+  transform: rotate(-90deg);
+}
+.page-margin-text--right {
+  top: ${margins.top}mm;
+  bottom: ${margins.bottom}mm;
+  right: 0;
+  width: ${margins.right}mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.page-margin-text--right .page-margin-text__inner {
+  /* Vertical, reading downward */
+  transform: rotate(90deg);
 }`
 }
 
@@ -404,6 +513,39 @@ export function buildFullDocumentCss(page: PageSettings): string {
 ${buildDocumentContentCss(page)}`
 }
 
+/** Escape HTML but keep `{{path}}` / `{{path|format}}` tokens for the binder. */
+export function escapeHtmlLeavingPlaceholders(text: string): string {
+  return text.replace(/\{\{[^{}]+\}\}|[^{]+|\{+/g, (chunk) => {
+    if (/^\{\{[^{}]+\}\}$/.test(chunk)) return chunk
+    return chunk
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+  })
+}
+
+export function hasMarginTexts(page: PageSettings): boolean {
+  const t = normalizePageSettings(page).marginTexts
+  return Boolean(t.top.trim() || t.right.trim() || t.bottom.trim() || t.left.trim())
+}
+
+/** Absolute margin-band markup injected inside each `.page` (Preview + Playwright). */
+export function buildMarginTextsHtml(page: PageSettings): string {
+  const p = normalizePageSettings(page)
+  const sides: PageMarginSide[] = ['top', 'right', 'bottom', 'left']
+  const parts: string[] = []
+  for (const side of sides) {
+    const raw = p.marginTexts[side].trim()
+    if (!raw) continue
+    const content = escapeHtmlLeavingPlaceholders(raw)
+    parts.push(
+      `<div class="page-margin-text page-margin-text--${side}" aria-hidden="true"><span class="page-margin-text__inner">${content}</span></div>`,
+    )
+  }
+  return parts.join('\n')
+}
+
 /** Guías solo para preview del editor (no van al HTML descargado). */
 export function buildMarginGuidesCss(page: PageSettings): string {
   const p = normalizePageSettings(page)
@@ -465,6 +607,12 @@ function parseMarker(css: string): Partial<PageSettings> | null {
       right: Number(parts.mr) || 0,
       bottom: Number(parts.mb) || 0,
       left: Number(parts.ml) || 0,
+    },
+    marginTexts: {
+      top: decodeMarkerText(parts.txtTop),
+      right: decodeMarkerText(parts.txtRight),
+      bottom: decodeMarkerText(parts.txtBottom),
+      left: decodeMarkerText(parts.txtLeft),
     },
     background: parts.bg || undefined,
     defaultFontSizeLarge: Number(parts.fsLarge) || undefined,

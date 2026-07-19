@@ -1316,7 +1316,11 @@ export function VisualBuilder({
         </aside>
 
         <section className={styles.canvas}>
-          <DocumentPagePanel page={page} onChange={onPageChange} />
+          <DocumentPagePanel
+            page={page}
+            sampleDataJson={sampleDataJson}
+            onChange={onPageChange}
+          />
           {missingLabels.length > 0 ? (
             <div className={styles.missingBanner} role="status">
               <strong>
