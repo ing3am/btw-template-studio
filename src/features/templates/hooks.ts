@@ -165,6 +165,30 @@ export function useDeleteDraft(id: string, nit: string | undefined) {
   })
 }
 
+export function useArchiveTemplate(nit: string | undefined) {
+  const queryClient = useQueryClient()
+  const scopedNit = nit?.trim() ?? ''
+  return useMutation({
+    mutationFn: (id: string) => api.archiveTemplate(id, scopedNit),
+    onSuccess: async (_void, id) => {
+      queryClient.removeQueries({ queryKey: keys.detail(id, scopedNit) })
+      await queryClient.invalidateQueries({ queryKey: keys.list(scopedNit) })
+    },
+  })
+}
+
+export function useDeleteTemplate(nit: string | undefined) {
+  const queryClient = useQueryClient()
+  const scopedNit = nit?.trim() ?? ''
+  return useMutation({
+    mutationFn: (id: string) => api.deleteTemplate(id, scopedNit),
+    onSuccess: async (_void, id) => {
+      queryClient.removeQueries({ queryKey: keys.detail(id, scopedNit) })
+      await queryClient.invalidateQueries({ queryKey: keys.list(scopedNit) })
+    },
+  })
+}
+
 export function useRollbackVersion(id: string, nit: string | undefined) {
   const queryClient = useQueryClient()
   const scopedNit = nit?.trim() ?? ''

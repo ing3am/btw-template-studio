@@ -2,10 +2,12 @@ import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowUpRight,
+  Archive,
   Download,
   FilePlus2,
   Files,
   Search,
+  Trash2,
   Upload,
   X,
 } from 'lucide-react'
@@ -14,13 +16,24 @@ import { Button } from '@/shared/ui/Button'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { useToast } from '@/shared/ui/Toast'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { describeTemplateStatus, getLatestVersion, getTemplateBundle } from '@/features/templates/api'
+import {
+  canHardDeleteTemplate,
+  describeTemplateStatus,
+  getLatestVersion,
+  getTemplateBundle,
+} from '@/features/templates/api'
 import {
   buildTemplateExport,
   downloadTemplateExport,
   readTemplateExportFile,
 } from '@/features/templates/exportImport'
-import { useCreateTemplate, useImportTemplate, useTemplates } from '@/features/templates/hooks'
+import {
+  useArchiveTemplate,
+  useCreateTemplate,
+  useDeleteTemplate,
+  useImportTemplate,
+  useTemplates,
+} from '@/features/templates/hooks'
 import type { DocumentType, TemplateExportV1 } from '@/features/templates/types'
 import {
   CreateTemplateDialog,
@@ -48,6 +61,8 @@ export function TemplateListPage() {
   const { data, isLoading, isError, refetch } = useTemplates(companyNit)
   const createMutation = useCreateTemplate(companyNit)
   const importMutation = useImportTemplate(companyNit)
+  const archiveMutation = useArchiveTemplate(companyNit)
+  const deleteMutation = useDeleteTemplate(companyNit)
   const importInputRef = useRef<HTMLInputElement>(null)
   const [open, setOpen] = useState(false)
   const [importPayload, setImportPayload] = useState<TemplateExportV1 | null>(null)
@@ -55,6 +70,7 @@ export function TemplateListPage() {
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [exportingId, setExportingId] = useState<string | null>(null)
+  const [busyId, setBusyId] = useState<string | null>(null)
 
   const filtered = useMemo(() => {
     if (!data) return []
@@ -165,6 +181,52 @@ export function TemplateListPage() {
   function clearFilters() {
     setQuery('')
     setTypeFilter('all')
+  }
+
+  async function handleArchive(templateId: string, templateName: string) {
+    if (!companyNit) {
+      toast.push('Inicia sesión para archivar plantillas.', 'error')
+      return
+    }
+    const confirmed = window.confirm(
+      `¿Archivar «${templateName}»?\n\nDejará de aparecer en el catálogo y no se usará en PDFs nuevos. Las facturas ya graficadas seguirán usando su versión pineada.`,
+    )
+    if (!confirmed) return
+    try {
+      setBusyId(templateId)
+      await archiveMutation.mutateAsync(templateId)
+      toast.push(`Archivamos «${templateName}»`, 'success')
+    } catch (error) {
+      toast.push(
+        error instanceof Error ? error.message : 'No pudimos archivar la plantilla',
+        'error',
+      )
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function handleDelete(templateId: string, templateName: string) {
+    if (!companyNit) {
+      toast.push('Inicia sesión para eliminar plantillas.', 'error')
+      return
+    }
+    const confirmed = window.confirm(
+      `¿Eliminar «${templateName}» de forma permanente?\n\nSolo es posible si nunca se publicó y no hay facturas vinculadas.`,
+    )
+    if (!confirmed) return
+    try {
+      setBusyId(templateId)
+      await deleteMutation.mutateAsync(templateId)
+      toast.push(`Eliminamos «${templateName}»`, 'success')
+    } catch (error) {
+      toast.push(
+        error instanceof Error ? error.message : 'No pudimos eliminar la plantilla',
+        'error',
+      )
+    } finally {
+      setBusyId(null)
+    }
   }
 
   return (
@@ -340,17 +402,44 @@ export function TemplateListPage() {
                   Abrir editor
                   <ArrowUpRight size={16} aria-hidden />
                 </Link>
-                <button
-                  type="button"
-                  className={styles.exportBtn}
-                  disabled={exportingId === template.id}
-                  aria-label={`Exportar ${template.name}`}
-                  title="Descargar JSON de la plantilla"
-                  onClick={() => void handleExport(template.id, template.name)}
-                >
-                  <Download size={14} aria-hidden />
-                  Exportar
-                </button>
+                <div className={styles.cardActions}>
+                  <button
+                    type="button"
+                    className={styles.exportBtn}
+                    disabled={exportingId === template.id || busyId === template.id}
+                    aria-label={`Exportar ${template.name}`}
+                    title="Descargar JSON de la plantilla"
+                    onClick={() => void handleExport(template.id, template.name)}
+                  >
+                    <Download size={14} aria-hidden />
+                    Exportar
+                  </button>
+                  {canHardDeleteTemplate(template) ? (
+                    <button
+                      type="button"
+                      className={styles.dangerBtn}
+                      disabled={busyId === template.id}
+                      aria-label={`Eliminar ${template.name}`}
+                      title="Eliminar plantilla sin uso"
+                      onClick={() => void handleDelete(template.id, template.name)}
+                    >
+                      <Trash2 size={14} aria-hidden />
+                      Eliminar
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.archiveBtn}
+                      disabled={busyId === template.id}
+                      aria-label={`Archivar ${template.name}`}
+                      title="Archivar: oculta del catálogo sin romper facturas pineadas"
+                      onClick={() => void handleArchive(template.id, template.name)}
+                    >
+                      <Archive size={14} aria-hidden />
+                      Archivar
+                    </button>
+                  )}
+                </div>
               </div>
             </article>
           ))}

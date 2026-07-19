@@ -283,6 +283,14 @@
   border-top: 1px solid var(--color-line);
 }
 
+.cardActions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.15rem;
+}
+
 .cardHint {
   display: inline-flex;
   align-items: center;
@@ -324,6 +332,48 @@
 }
 
 .exportBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.archiveBtn,
+.dangerBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0.2rem 0.35rem;
+  border: 0;
+  border-radius: var(--radius-sm, 6px);
+  background: transparent;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.archiveBtn {
+  color: var(--color-muted);
+}
+
+.archiveBtn:hover:not(:disabled),
+.archiveBtn:focus-visible {
+  color: var(--color-ink);
+  outline: none;
+}
+
+.dangerBtn {
+  color: color-mix(in srgb, #b42318 85%, var(--color-muted));
+}
+
+.dangerBtn:hover:not(:disabled),
+.dangerBtn:focus-visible {
+  color: #b42318;
+  outline: none;
+}
+
+.archiveBtn:disabled,
+.dangerBtn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
