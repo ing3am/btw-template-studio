@@ -76,15 +76,18 @@ export function createSeedBundles(): TemplateBundle[] {
 export function createBlankBundle(
   name: string,
   documentType: TemplateBundle['template']['documentType'],
+  options?: { nit?: string; sectorSalud?: boolean },
 ): TemplateBundle {
   const templateId = crypto.randomUUID()
+  const sectorSalud = options?.sectorSalud ?? DEFAULT_SECTOR_SALUD
+  const nit = options?.nit ?? DEFAULT_NIT
   const page = defaultPageSettings()
   const blocks = createDefaultFacturaBlocks({
-    sectorSalud: DEFAULT_SECTOR_SALUD,
+    sectorSalud,
   })
   const { html, css } = serializeBlocksToDocument(blocks, page)
   const sample = buildGenericEditorSample({
-    sectorSalud: DEFAULT_SECTOR_SALUD,
+    sectorSalud,
   })
   const createdAt = now()
 
@@ -98,6 +101,7 @@ export function createBlankBundle(
       publishedVersionNumber: 0,
       hasDraft: true,
       updatedAt: createdAt,
+      nit,
     },
     versions: [
       {

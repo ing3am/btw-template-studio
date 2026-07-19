@@ -38,6 +38,17 @@ function delay(ms = 180) {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
 }
 
+function normalizeNit(nit?: string | null): string {
+  if (!nit) return ''
+  return nit.replace(/\D/g, '')
+}
+
+function withNitQuery(path: string, nit: string): string {
+  const normalized = normalizeNit(nit)
+  const sep = path.includes('?') ? '&' : '?'
+  return `${path}${sep}nit=${encodeURIComponent(normalized)}`
+}
+
 function latestVersion(bundle: TemplateBundle): TemplateVersion {
   return [...bundle.versions].sort((a, b) => b.versionNumber - a.versionNumber)[0]
 }
@@ -95,7 +106,7 @@ function syncTemplateMeta(bundle: TemplateBundle): Template {
   }
 }
 
-function normalizeTemplate(raw: Template & { updatedAt: string | Date }): Template {
+function normalizeTemplate(raw: Template & { updatedAt: string | Date; nit?: string }): Template {
   return {
     id: String(raw.id),
     name: raw.name,
@@ -105,6 +116,7 @@ function normalizeTemplate(raw: Template & { updatedAt: string | Date }): Templa
     publishedVersionNumber: raw.publishedVersionNumber ?? 0,
     hasDraft: Boolean(raw.hasDraft),
     updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : new Date(raw.updatedAt).toISOString(),
+    nit: raw.nit?.trim() || undefined,
   }
 }
 
@@ -137,17 +149,23 @@ function normalizeBundle(raw: {
   }
 }
 
-async function listTemplatesMock(): Promise<Template[]> {
+async function listTemplatesMock(nit?: string): Promise<Template[]> {
   await delay()
+  const normalized = normalizeNit(nit)
   return readStore()
     .map((bundle) => bundle.template)
+    .filter((template) => !normalized || normalizeNit(template.nit) === normalized)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
 }
 
-async function getTemplateBundleMock(id: string): Promise<TemplateBundle> {
+async function getTemplateBundleMock(id: string, nit?: string): Promise<TemplateBundle> {
   await delay()
   const bundle = readStore().find((item) => item.template.id === id)
   if (!bundle) {
+    throw new Error('No encontramos esa plantilla.')
+  }
+  const normalized = normalizeNit(nit)
+  if (normalized && normalizeNit(bundle.template.nit) !== normalized) {
     throw new Error('No encontramos esa plantilla.')
   }
   return bundle
@@ -156,7 +174,10 @@ async function getTemplateBundleMock(id: string): Promise<TemplateBundle> {
 async function createTemplateMock(input: CreateTemplateInput): Promise<Template> {
   await delay()
   const bundles = readStore()
-  const bundle = createBlankBundle(input.name, input.documentType)
+  const bundle = createBlankBundle(input.name, input.documentType, {
+    nit: input.nit,
+    sectorSalud: input.sectorSalud ?? false,
+  })
   writeStore([bundle, ...bundles])
   return bundle.template
 }
@@ -298,29 +319,34 @@ async function deleteDraftMock(id: string): Promise<void> {
   writeStore(bundles)
 }
 
-async function listTemplatesApi(): Promise<Template[]> {
-  const items = await apiFetch<Array<Template & { updatedAt: string }>>('/templates')
+async function listTemplatesApi(nit: string): Promise<Template[]> {
+  const items = await apiFetch<Array<Template & { updatedAt: string }>>(
+    withNitQuery('/templates', nit),
+  )
   return items.map(normalizeTemplate).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
 }
 
-async function getTemplateBundleApi(id: string): Promise<TemplateBundle> {
+async function getTemplateBundleApi(id: string, nit: string): Promise<TemplateBundle> {
   const bundle = await apiFetch<{
     template: Template & { updatedAt: string }
     versions: Array<TemplateVersion & { createdAt: string }>
-  }>(`/templates/${id}`)
+  }>(withNitQuery(`/templates/${id}`, nit))
   return normalizeBundle(bundle)
 }
 
 async function createTemplateApi(input: CreateTemplateInput): Promise<Template> {
-  const blank = createBlankBundle(input.name, input.documentType)
+  const blank = createBlankBundle(input.name, input.documentType, {
+    nit: input.nit,
+    sectorSalud: input.sectorSalud ?? false,
+  })
   const version = blank.versions[0]
   const created = await apiFetch<Template & { updatedAt: string }>('/templates', {
     method: 'POST',
     body: JSON.stringify({
       name: input.name,
       documentType: input.documentType,
-      nit: '900000000',
-      sectorSalud: false,
+      nit: normalizeNit(input.nit),
+      sectorSalud: input.sectorSalud ?? false,
       html: version.html,
       css: version.css,
       schemaJson: version.schemaJson,
@@ -332,10 +358,10 @@ async function createTemplateApi(input: CreateTemplateInput): Promise<Template> 
   return normalizeTemplate(created)
 }
 
-async function saveDraftApi(id: string, input: SaveDraftInput): Promise<TemplateVersion> {
+async function saveDraftApi(id: string, input: SaveDraftInput, nit: string): Promise<TemplateVersion> {
   const { status, ...content } = input
   const version = await apiFetch<TemplateVersion & { createdAt: string }>(
-    `/templates/${id}/draft`,
+    withNitQuery(`/templates/${id}/draft`, nit),
     {
       method: 'PUT',
       body: JSON.stringify({
@@ -347,37 +373,41 @@ async function saveDraftApi(id: string, input: SaveDraftInput): Promise<Template
   return normalizeVersion(version)
 }
 
-async function publishTemplateApi(id: string): Promise<TemplateVersion> {
+async function publishTemplateApi(id: string, nit: string): Promise<TemplateVersion> {
   // Backend publishes via draft upsert with status=published (no POST /publish).
-  return saveDraftApi(id, { status: 'published' })
+  return saveDraftApi(id, { status: 'published' }, nit)
 }
 
-export async function listTemplates(): Promise<Template[]> {
-  return useMocks ? listTemplatesMock() : listTemplatesApi()
+export async function listTemplates(nit: string): Promise<Template[]> {
+  return useMocks ? listTemplatesMock(nit) : listTemplatesApi(nit)
 }
 
-export async function getTemplateBundle(id: string): Promise<TemplateBundle> {
-  return useMocks ? getTemplateBundleMock(id) : getTemplateBundleApi(id)
+export async function getTemplateBundle(id: string, nit: string): Promise<TemplateBundle> {
+  return useMocks ? getTemplateBundleMock(id, nit) : getTemplateBundleApi(id, nit)
 }
 
 export async function createTemplate(input: CreateTemplateInput): Promise<Template> {
   return useMocks ? createTemplateMock(input) : createTemplateApi(input)
 }
 
-export async function saveDraft(id: string, input: SaveDraftInput): Promise<TemplateVersion> {
-  return useMocks ? saveDraftMock(id, input) : saveDraftApi(id, input)
+export async function saveDraft(
+  id: string,
+  input: SaveDraftInput,
+  nit: string,
+): Promise<TemplateVersion> {
+  return useMocks ? saveDraftMock(id, input) : saveDraftApi(id, input, nit)
 }
 
-export async function publishTemplate(id: string): Promise<TemplateVersion> {
-  return useMocks ? publishTemplateMock(id) : publishTemplateApi(id)
+export async function publishTemplate(id: string, nit: string): Promise<TemplateVersion> {
+  return useMocks ? publishTemplateMock(id) : publishTemplateApi(id, nit)
 }
 
-async function deleteDraftApi(id: string): Promise<void> {
-  await apiFetch<void>(`/templates/${id}/draft`, { method: 'DELETE' })
+async function deleteDraftApi(id: string, nit: string): Promise<void> {
+  await apiFetch<void>(withNitQuery(`/templates/${id}/draft`, nit), { method: 'DELETE' })
 }
 
-export async function deleteDraft(id: string): Promise<void> {
-  return useMocks ? deleteDraftMock(id) : deleteDraftApi(id)
+export async function deleteDraft(id: string, nit: string): Promise<void> {
+  return useMocks ? deleteDraftMock(id) : deleteDraftApi(id, nit)
 }
 
 async function rollbackVersionMock(
@@ -424,9 +454,10 @@ async function rollbackVersionMock(
 async function rollbackVersionApi(
   id: string,
   versionNumber: number,
+  nit: string,
 ): Promise<TemplateVersion> {
   const version = await apiFetch<TemplateVersion & { createdAt: string }>(
-    `/templates/${id}/versions/${versionNumber}/rollback`,
+    withNitQuery(`/templates/${id}/versions/${versionNumber}/rollback`, nit),
     { method: 'POST' },
   )
   return normalizeVersion(version)
@@ -435,10 +466,11 @@ async function rollbackVersionApi(
 export async function rollbackVersion(
   id: string,
   versionNumber: number,
+  nit: string,
 ): Promise<TemplateVersion> {
   return useMocks
     ? rollbackVersionMock(id, versionNumber)
-    : rollbackVersionApi(id, versionNumber)
+    : rollbackVersionApi(id, versionNumber, nit)
 }
 
 /** Version loaded in the editor: open draft, else live published, else highest number. */
