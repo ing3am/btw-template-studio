@@ -74,7 +74,8 @@ export function defaultPageSettings(): PageSettings {
     widthMm: 216,
     heightMm: 279,
     orientation: 'vertical',
-    margins: { top: 5, right: 5, bottom: 5, left: 5 },
+    /** Left is wider so two-line default margin text fits after -90deg rotate. */
+    margins: { top: 5, right: 5, bottom: 5, left: 10 },
     marginTexts: defaultMarginTexts(),
     background: '#ffffff',
     defaultFontSizeLarge: DEFAULT_FONT_SIZE_LARGE_PX,
@@ -247,8 +248,8 @@ export function buildPageCss(page: PageSettings): string {
   const small = p.defaultFontSizeSmall
   /** Inset along the margin strip (from content corners / side edges). */
   const padAlongMm = 2.5
-  /** Light inset toward page edge and content box (keeps multi-line vertical text in-band). */
-  const padAcrossMm = 1.5
+  /** Light inset toward page edge and content box (top/bottom bands). */
+  const padAcrossMm = 1
   const contentHeightMm = Math.max(0, heightMm - margins.top - margins.bottom)
   const contentWidthMm = Math.max(0, widthMm - margins.left - margins.right)
   /** Usable length along the vertical margin strip (after left/right rotate). */
@@ -276,6 +277,7 @@ html, body {
   background: ${background};
   margin: 0 auto 16px;
   box-shadow: 0 0 0 1px #e4e2de;
+  overflow: visible;
 }
 .page-break {
   page-break-before: always;
@@ -284,12 +286,12 @@ html, body {
 
 .page-margin-text {
   position: absolute;
-  z-index: 1;
+  z-index: 2;
   pointer-events: none;
   box-sizing: border-box;
   overflow: hidden;
   font-size: ${small}px;
-  line-height: 1.2;
+  line-height: 1.15;
   color: #1c1412;
 }
 .page-margin-text__inner {
@@ -327,15 +329,16 @@ html, body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* Left / right: centered in margin band + along content height */
+/*
+ * Left / right: margin-band inset + absolute center + rotate.
+ * Avoid flex+rotate alone: a long pre-rotate box is clipped by the narrow
+ * band width (overflow:hidden) before paint, so vertical text disappears.
+ */
 .page-margin-text--left,
 .page-margin-text--right {
   top: ${margins.top}mm;
   bottom: ${margins.bottom}mm;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: ${padAlongMm}mm ${padAcrossMm}mm;
+  overflow: visible;
 }
 .page-margin-text--left {
   left: 0;
@@ -347,7 +350,12 @@ html, body {
 }
 .page-margin-text--left .page-margin-text__inner,
 .page-margin-text--right .page-margin-text__inner {
-  /* Do not clamp to band width before rotate — length runs along content height */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  box-sizing: border-box;
+  /* Pre-rotate width = length along the page after rotate */
+  width: ${verticalRunMm}mm;
   max-width: ${verticalRunMm}mm;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -355,11 +363,11 @@ html, body {
 }
 .page-margin-text--left .page-margin-text__inner {
   /* Vertical, reading upward */
-  transform: rotate(-90deg);
+  transform: translate(-50%, -50%) rotate(-90deg);
 }
 .page-margin-text--right .page-margin-text__inner {
   /* Vertical, reading downward */
-  transform: rotate(90deg);
+  transform: translate(-50%, -50%) rotate(90deg);
 }`
 }
 
