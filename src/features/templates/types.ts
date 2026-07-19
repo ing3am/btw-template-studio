@@ -33,6 +33,7 @@ export type Template = {
   /** Tip is an unpublished draft while a published version may still exist. */
   hasDraft?: boolean
   updatedAt: string
+  nit?: string
 }
 
 export type TemplateBundle = {
@@ -43,6 +44,8 @@ export type TemplateBundle = {
 export type CreateTemplateInput = {
   name: string
   documentType: DocumentType
+  nit: string
+  sectorSalud?: boolean
 }
 
 export type SaveDraftInput = {

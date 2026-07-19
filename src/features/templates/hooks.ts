@@ -8,8 +8,8 @@ import type {
 } from './types'
 
 const keys = {
-  list: ['templates'] as const,
-  detail: (id: string) => ['templates', id] as const,
+  list: (nit: string) => ['templates', nit] as const,
+  detail: (id: string, nit: string) => ['templates', nit, id] as const,
 }
 
 function mergeVersionIntoBundle(
@@ -32,36 +32,41 @@ function mergeVersionIntoBundle(
   }
 }
 
-export function useTemplates() {
+export function useTemplates(nit: string | undefined) {
+  const scopedNit = nit?.trim() ?? ''
   return useQuery({
-    queryKey: keys.list,
-    queryFn: api.listTemplates,
+    queryKey: keys.list(scopedNit),
+    queryFn: () => api.listTemplates(scopedNit),
+    enabled: Boolean(scopedNit),
   })
 }
 
-export function useTemplateBundle(id: string | undefined) {
+export function useTemplateBundle(id: string | undefined, nit: string | undefined) {
+  const scopedNit = nit?.trim() ?? ''
   return useQuery({
-    queryKey: keys.detail(id ?? 'unknown'),
-    queryFn: () => api.getTemplateBundle(id!),
-    enabled: Boolean(id),
+    queryKey: keys.detail(id ?? 'unknown', scopedNit),
+    queryFn: () => api.getTemplateBundle(id!, scopedNit),
+    enabled: Boolean(id) && Boolean(scopedNit),
   })
 }
 
-export function useCreateTemplate() {
+export function useCreateTemplate(nit: string | undefined) {
   const queryClient = useQueryClient()
+  const scopedNit = nit?.trim() ?? ''
   return useMutation({
     mutationFn: (input: CreateTemplateInput) => api.createTemplate(input),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: keys.list })
+      await queryClient.invalidateQueries({ queryKey: keys.list(scopedNit) })
     },
   })
 }
 
-export function useSaveDraft(id: string) {
+export function useSaveDraft(id: string, nit: string | undefined) {
   const queryClient = useQueryClient()
+  const scopedNit = nit?.trim() ?? ''
   return useMutation({
     mutationFn: async (input: SaveDraftInput) => {
-      const version = await api.saveDraft(id, input)
+      const version = await api.saveDraft(id, input, scopedNit)
       // Prefer server value; if empty, keep what we just sent (images).
       const assetsJson =
         version.assetsJson && version.assetsJson.trim() !== '[]'
@@ -71,7 +76,7 @@ export function useSaveDraft(id: string) {
     },
     onSuccess: async (version) => {
       // Update cache in place — avoid refetch wiping in-memory assets / dirty state.
-      queryClient.setQueryData<TemplateBundle>(keys.detail(id), (current) => {
+      queryClient.setQueryData<TemplateBundle>(keys.detail(id, scopedNit), (current) => {
         const merged = mergeVersionIntoBundle(current, { ...version, status: 'draft', isPublished: false }, {
           hasDraft: true,
           currentVersionNumber: version.versionNumber,
@@ -92,17 +97,18 @@ export function useSaveDraft(id: string) {
           },
         }
       })
-      await queryClient.invalidateQueries({ queryKey: keys.list })
+      await queryClient.invalidateQueries({ queryKey: keys.list(scopedNit) })
     },
   })
 }
 
-export function usePublishTemplate(id: string) {
+export function usePublishTemplate(id: string, nit: string | undefined) {
   const queryClient = useQueryClient()
+  const scopedNit = nit?.trim() ?? ''
   return useMutation({
-    mutationFn: () => api.saveDraft(id, { status: 'published' }),
+    mutationFn: () => api.saveDraft(id, { status: 'published' }, scopedNit),
     onSuccess: async (version) => {
-      queryClient.setQueryData<TemplateBundle>(keys.detail(id), (current) => {
+      queryClient.setQueryData<TemplateBundle>(keys.detail(id, scopedNit), (current) => {
         if (!current) return current
         const versions = current.versions.map((item) => {
           if (item.id === version.id) {
@@ -128,29 +134,31 @@ export function usePublishTemplate(id: string) {
           versions: nextVersions,
         }
       })
-      await queryClient.invalidateQueries({ queryKey: keys.list })
+      await queryClient.invalidateQueries({ queryKey: keys.list(scopedNit) })
     },
   })
 }
 
-export function useDeleteDraft(id: string) {
+export function useDeleteDraft(id: string, nit: string | undefined) {
   const queryClient = useQueryClient()
+  const scopedNit = nit?.trim() ?? ''
   return useMutation({
-    mutationFn: () => api.deleteDraft(id),
+    mutationFn: () => api.deleteDraft(id, scopedNit),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: keys.detail(id) })
-      await queryClient.invalidateQueries({ queryKey: keys.list })
+      await queryClient.invalidateQueries({ queryKey: keys.detail(id, scopedNit) })
+      await queryClient.invalidateQueries({ queryKey: keys.list(scopedNit) })
     },
   })
 }
 
-export function useRollbackVersion(id: string) {
+export function useRollbackVersion(id: string, nit: string | undefined) {
   const queryClient = useQueryClient()
+  const scopedNit = nit?.trim() ?? ''
   return useMutation({
-    mutationFn: (versionNumber: number) => api.rollbackVersion(id, versionNumber),
+    mutationFn: (versionNumber: number) => api.rollbackVersion(id, versionNumber, scopedNit),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: keys.detail(id) })
-      await queryClient.invalidateQueries({ queryKey: keys.list })
+      await queryClient.invalidateQueries({ queryKey: keys.detail(id, scopedNit) })
+      await queryClient.invalidateQueries({ queryKey: keys.list(scopedNit) })
     },
   })
 }

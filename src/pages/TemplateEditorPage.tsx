@@ -44,6 +44,7 @@ import { Button } from '@/shared/ui/Button'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { useToast } from '@/shared/ui/Toast'
 import { useDebouncedValue } from '@/shared/lib/useDebouncedValue'
+import { useAuth } from '@/features/auth/AuthProvider'
 import styles from './TemplateEditorPage.module.css'
 
 type Mode = 'visual' | 'advanced'
@@ -63,11 +64,13 @@ function parseBlocks(blocksJson: string | undefined): TemplateBlock[] {
 export function TemplateEditorPage() {
   const { id = '' } = useParams()
   const toast = useToast()
-  const { data, isLoading, isError, refetch } = useTemplateBundle(id)
-  const saveDraft = useSaveDraft(id)
-  const publish = usePublishTemplate(id)
-  const discardDraft = useDeleteDraft(id)
-  const rollback = useRollbackVersion(id)
+  const { session } = useAuth()
+  const companyNit = session?.nit ?? ''
+  const { data, isLoading, isError, refetch } = useTemplateBundle(id, companyNit)
+  const saveDraft = useSaveDraft(id, companyNit)
+  const publish = usePublishTemplate(id, companyNit)
+  const discardDraft = useDeleteDraft(id, companyNit)
+  const rollback = useRollbackVersion(id, companyNit)
 
   const [mode, setMode] = useState<Mode>('visual')
   const [advancedTab, setAdvancedTab] = useState<'html' | 'css' | 'sample'>('sample')
