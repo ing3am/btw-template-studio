@@ -56,7 +56,7 @@ export function AppShell() {
           <div className={styles.session}>
             {!editing && session ? (
               <span className={styles.userName}>
-                {session.user.displayName}
+                {session.razonSocial || session.user.displayName}
                 {session.nit ? ` · NIT ${session.nit}` : ''}
               </span>
             ) : null}

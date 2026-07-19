@@ -15,5 +15,7 @@ export type AuthSession = {
   token: string
   /** Company NIT from StartSesion (empresa / usuario). */
   nit: string
+  /** Company trade name from StartSesion `empresa.razonSocial`. */
+  razonSocial: string
   loggedInAt: string
 }
