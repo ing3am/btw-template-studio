@@ -15,6 +15,10 @@ export type PageSettings = {
   orientation: PageOrientation
   margins: PageMarginsMm
   background: string
+  /** Default larger body/label size (px) — same unit as block `fontSizePx`. */
+  defaultFontSizeLarge: number
+  /** Default smaller dense size (px) — same unit as block `fontSizePx`. */
+  defaultFontSizeSmall: number
 }
 
 export const PAGE_SIZE_PRESETS: {
@@ -31,6 +35,12 @@ export const PAGE_SIZE_PRESETS: {
 
 const PAGE_MARKER = '/* btw-page:'
 
+/** Matches TextStyleEditor px range and FONT_SIZE_PRESETS (Normal / Pequeño). */
+export const PAGE_FONT_SIZE_MIN = 8
+export const PAGE_FONT_SIZE_MAX = 72
+export const DEFAULT_FONT_SIZE_LARGE_PX = 9
+export const DEFAULT_FONT_SIZE_SMALL_PX = 8
+
 export function defaultPageSettings(): PageSettings {
   return {
     sizeId: 'carta',
@@ -39,7 +49,16 @@ export function defaultPageSettings(): PageSettings {
     orientation: 'vertical',
     margins: { top: 5, right: 5, bottom: 5, left: 5 },
     background: '#ffffff',
+    defaultFontSizeLarge: DEFAULT_FONT_SIZE_LARGE_PX,
+    defaultFontSizeSmall: DEFAULT_FONT_SIZE_SMALL_PX,
   }
+}
+
+function clampFontSizePx(value: number | undefined, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return fallback
+  }
+  return Math.min(PAGE_FONT_SIZE_MAX, Math.max(PAGE_FONT_SIZE_MIN, value))
 }
 
 export function resolvePageDimensions(
@@ -100,6 +119,14 @@ export function normalizePageSettings(
       left: margin(partial?.margins?.left, base.margins.left),
     },
     background: partial?.background || base.background,
+    defaultFontSizeLarge: clampFontSizePx(
+      partial?.defaultFontSizeLarge,
+      base.defaultFontSizeLarge,
+    ),
+    defaultFontSizeSmall: clampFontSizePx(
+      partial?.defaultFontSizeSmall,
+      base.defaultFontSizeSmall,
+    ),
   }
 }
 
@@ -154,7 +181,7 @@ export function applyPageOrientation(
 }
 
 function buildMarker(page: PageSettings): string {
-  return `${PAGE_MARKER}sizeId=${page.sizeId};orientation=${page.orientation};width=${page.widthMm};height=${page.heightMm};mt=${page.margins.top};mr=${page.margins.right};mb=${page.margins.bottom};ml=${page.margins.left};bg=${page.background} */`
+  return `${PAGE_MARKER}sizeId=${page.sizeId};orientation=${page.orientation};width=${page.widthMm};height=${page.heightMm};mt=${page.margins.top};mr=${page.margins.right};mb=${page.margins.bottom};ml=${page.margins.left};bg=${page.background};fsLarge=${page.defaultFontSizeLarge};fsSmall=${page.defaultFontSizeSmall} */`
 }
 
 export function buildPageCss(page: PageSettings): string {
@@ -187,10 +214,13 @@ html, body {
 }`
 }
 
-export function buildDocumentContentCss(): string {
+export function buildDocumentContentCss(page?: PageSettings): string {
+  const p = normalizePageSettings(page)
+  const large = p.defaultFontSizeLarge
+  const small = p.defaultFontSizeSmall
   return `body {
   font-family: "DM Sans", "Segoe UI", Helvetica, Arial, sans-serif;
-  font-size: 9px;
+  font-size: ${large}px;
   line-height: 1.3;
   color: #1c1412;
 }
@@ -207,7 +237,7 @@ export function buildDocumentContentCss(): string {
 .container-title,
 .datos-title {
   margin: 0 0 4px;
-  font-size: 10px;
+  font-size: ${large}px;
   font-weight: 700;
   text-transform: none;
   letter-spacing: 0;
@@ -255,7 +285,7 @@ export function buildDocumentContentCss(): string {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
+  font-size: ${large}px;
   font-weight: 700;
   color: #666;
   text-align: center;
@@ -312,7 +342,7 @@ table {
   border-collapse: separate;
   border-spacing: 0;
   margin: 4px 0 6px;
-  font-size: 8.5px;
+  font-size: ${small}px;
 }
 
 table.invoice-table th,
@@ -363,7 +393,7 @@ th {
   margin-top: 12px;
   padding-top: 6px;
   border-top: 1px solid #ccc;
-  font-size: 8.5px;
+  font-size: ${small}px;
   color: #555;
 }`
 }
@@ -371,7 +401,7 @@ th {
 export function buildFullDocumentCss(page: PageSettings): string {
   return `${buildPageCss(page)}
 
-${buildDocumentContentCss()}`
+${buildDocumentContentCss(page)}`
 }
 
 /** Guías solo para preview del editor (no van al HTML descargado). */
@@ -437,6 +467,8 @@ function parseMarker(css: string): Partial<PageSettings> | null {
       left: Number(parts.ml) || 0,
     },
     background: parts.bg || undefined,
+    defaultFontSizeLarge: Number(parts.fsLarge) || undefined,
+    defaultFontSizeSmall: Number(parts.fsSmall) || undefined,
   }
 }
 

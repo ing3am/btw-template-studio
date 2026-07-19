@@ -10,6 +10,10 @@ import {
   stringifyTextStyle,
   type TextStyle,
 } from './textStyle'
+import {
+  DEFAULT_FONT_SIZE_LARGE_PX,
+  DEFAULT_FONT_SIZE_SMALL_PX,
+} from './pageSettings'
 import { getDianLabel } from './dianLabels'
 
 export type BlockType =
@@ -553,7 +557,10 @@ export const BLOCK_CATALOG: {
   },
 ]
 
-export function createBlock(type: BlockType): TemplateBlock {
+export function createBlock(
+  type: BlockType,
+  options?: { defaultFontSizePx?: number },
+): TemplateBlock {
   const catalog = BLOCK_CATALOG.find((item) => item.type === type)
   const block: TemplateBlock = {
     id: crypto.randomUUID(),
@@ -563,23 +570,73 @@ export function createBlock(type: BlockType): TemplateBlock {
   if (type === 'contenedor') {
     block.children = []
   }
+  const fontSizePx = options?.defaultFontSizePx
+  if (typeof fontSizePx === 'number' && fontSizePx > 0) {
+    applyDefaultFontSizeToNewBlock(block, fontSizePx)
+  }
   return block
+}
+
+function applyDefaultFontSizeToNewBlock(
+  block: TemplateBlock,
+  fontSizePx: number,
+): void {
+  if (typeof block.props.titleStyleJson === 'string') {
+    const style = parseTextStyleJson(block.props.titleStyleJson, defaultTitleStyle())
+    block.props.titleStyleJson = stringifyTextStyle({ ...style, fontSizePx })
+  }
+  if (typeof block.props.contentStyleJson === 'string') {
+    const style = parseTextStyleJson(block.props.contentStyleJson, defaultBodyStyle())
+    block.props.contentStyleJson = stringifyTextStyle({ ...style, fontSizePx })
+  }
+  if (typeof block.props.fieldsJson === 'string') {
+    const fields = parseDatosFields(block.props.fieldsJson)
+    block.props.fieldsJson = stringifyDatosFields(
+      fields.map((field) => ({
+        ...field,
+        labelStyle: { ...field.labelStyle, fontSizePx },
+        valueStyle: { ...field.valueStyle, fontSizePx },
+      })),
+    )
+  }
+  if (typeof block.props.columnsJson === 'string') {
+    const columns = parseTableColumns(block.props.columnsJson)
+    block.props.columnsJson = stringifyTableColumns(
+      columns.map((column) => ({
+        ...column,
+        headerStyle: { ...column.headerStyle, fontSizePx },
+        cellStyle: { ...column.cellStyle, fontSizePx },
+      })),
+    )
+  }
 }
 
 export function createDefaultFacturaBlocks(options?: {
   sectorSalud?: boolean
+  defaultFontSizeLarge?: number
+  defaultFontSizeSmall?: number
 }): TemplateBlock[] {
   // Replica estructural de FacturaFormatoSeisAmazonas (orden document.Add):
   // Header {20,30,20} → Body {2,2,1.5,2} → Body2 {2,2,3.5} → CUFE → ítems →
   // UnitTotal → Footer {4,2} → valor letras → pie FE (+ anexo salud opcional)
 
   const sectorSalud = options?.sectorSalud ?? false
-  const small9 = { ...defaultValueStyle(), fontSizePx: 9, bold: false }
-  const small8 = { ...defaultValueStyle(), fontSizePx: 8, bold: false }
+  const large =
+    typeof options?.defaultFontSizeLarge === 'number' &&
+    options.defaultFontSizeLarge > 0
+      ? options.defaultFontSizeLarge
+      : DEFAULT_FONT_SIZE_LARGE_PX
+  const small =
+    typeof options?.defaultFontSizeSmall === 'number' &&
+    options.defaultFontSizeSmall > 0
+      ? options.defaultFontSizeSmall
+      : DEFAULT_FONT_SIZE_SMALL_PX
+  const small9 = { ...defaultValueStyle(), fontSizePx: large, bold: false }
+  const small8 = { ...defaultValueStyle(), fontSizePx: small, bold: false }
   const title10 = {
     ...defaultTitleStyle(),
     color: '#111111',
-    fontSizePx: 10,
+    fontSizePx: Math.max(large, 10),
   }
 
   // —— Header {20, 30, 20}: logo | empresa | tipo+LegalNumber ——
@@ -614,7 +671,7 @@ export function createDefaultFacturaBlocks(options?: {
       }),
       fieldFromTag('emisor-nit', {
         label: 'NIT',
-        labelStyle: { ...defaultLabelStyle(), fontSizePx: 9, bold: true },
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: large, bold: true },
         valueStyle: { ...small9, align: 'centro' },
       }),
       fieldFromTag('emisor-responsabilidad', {
@@ -623,7 +680,7 @@ export function createDefaultFacturaBlocks(options?: {
       }),
       fieldFromTag('emisor-telefono', {
         label: 'TEL',
-        labelStyle: { ...defaultLabelStyle(), fontSizePx: 9, bold: true },
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: large, bold: true },
         valueStyle: { ...small9, align: 'centro' },
       }),
       fieldFromTag('emisor-direccion', {
@@ -653,7 +710,7 @@ export function createDefaultFacturaBlocks(options?: {
         label: '',
         valueStyle: {
           ...defaultValueStyle(),
-          fontSizePx: 9,
+          fontSizePx: large,
           bold: true,
           align: 'centro',
         },
@@ -726,19 +783,19 @@ export function createDefaultFacturaBlocks(options?: {
     fieldsJson: stringifyDatosFields([
       fieldFromTag('doc-fecha-generacion', {
         label: 'Fecha de generación',
-        labelStyle: { ...defaultLabelStyle(), fontSizePx: 8, bold: true },
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: small, bold: true },
         valueStyle: small8,
       }),
       fieldFromTag('doc-hora-generacion', {
         label: 'Hora de generación',
-        labelStyle: { ...defaultLabelStyle(), fontSizePx: 8, bold: true },
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: small, bold: true },
         valueStyle: small8,
       }),
       createDatosField({
         label: 'Fecha Validación Dian',
         mode: 'campo',
         value: 'factura.fechaValidacionDian',
-        labelStyle: { ...defaultLabelStyle(), fontSizePx: 8, bold: true },
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: small, bold: true },
         valueStyle: small8,
       }),
     ]),
@@ -783,7 +840,7 @@ export function createDefaultFacturaBlocks(options?: {
         mode: 'campo',
         value: 'factura.fecha',
         format: 'fecha',
-        labelStyle: { ...defaultLabelStyle(), fontSizePx: 8, bold: true },
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: small, bold: true },
         valueStyle: small8,
       }),
       createDatosField({
@@ -791,17 +848,17 @@ export function createDefaultFacturaBlocks(options?: {
         mode: 'campo',
         value: 'factura.fechaVencimiento',
         format: 'fecha',
-        labelStyle: { ...defaultLabelStyle(), fontSizePx: 8, bold: true },
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: small, bold: true },
         valueStyle: small8,
       }),
       fieldFromTag('pago-forma', {
         label: 'Forma de Pago',
-        labelStyle: { ...defaultLabelStyle(), fontSizePx: 8, bold: true },
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: small, bold: true },
         valueStyle: small8,
       }),
       fieldFromTag('pago-medio', {
         label: 'Medio de Pago',
-        labelStyle: { ...defaultLabelStyle(), fontSizePx: 8, bold: true },
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: small, bold: true },
         valueStyle: small8,
       }),
     ]),
@@ -821,14 +878,14 @@ export function createDefaultFacturaBlocks(options?: {
         label: 'Nro Pedido',
         mode: 'campo',
         value: 'factura.nroPedido',
-        labelStyle: { ...defaultLabelStyle(), fontSizePx: 8, bold: true },
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: small, bold: true },
         valueStyle: small8,
       }),
       createDatosField({
         label: 'Línea de negocio',
         mode: 'campo',
         value: 'factura.lineaNegocio',
-        labelStyle: { ...defaultLabelStyle(), fontSizePx: 8, bold: true },
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: small, bold: true },
         valueStyle: small8,
       }),
     ]),
@@ -872,7 +929,7 @@ export function createDefaultFacturaBlocks(options?: {
     fieldsJson: stringifyDatosFields([
       fieldFromTag('cufe', {
         label: 'CUFE',
-        labelStyle: { ...defaultLabelStyle(), fontSizePx: 9, bold: true },
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: large, bold: true },
         valueStyle: { ...defaultValueStyle(), fontSizePx: 7, bold: false },
       }),
     ]),
@@ -900,8 +957,8 @@ export function createDefaultFacturaBlocks(options?: {
         label: 'Total Items',
         mode: 'campo',
         value: 'totales.totalItems',
-        labelStyle: { ...defaultLabelStyle(), fontSizePx: 9, bold: true },
-        valueStyle: { ...defaultValueStyle(), fontSizePx: 9, bold: true },
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: large, bold: true },
+        valueStyle: { ...defaultValueStyle(), fontSizePx: large, bold: true },
       }),
     ]),
     labelWidth: 80,
@@ -933,7 +990,7 @@ export function createDefaultFacturaBlocks(options?: {
     titleStyleJson: stringifyTextStyle({
       ...defaultTitleStyle(),
       color: '#111111',
-      fontSizePx: 9,
+      fontSizePx: large,
     }),
   }
 
@@ -971,7 +1028,7 @@ export function createDefaultFacturaBlocks(options?: {
         label: 'SON',
         mode: 'campo',
         value: 'totales.valorEnLetras',
-        labelStyle: { ...defaultLabelStyle(), fontSizePx: 9, bold: true },
+        labelStyle: { ...defaultLabelStyle(), fontSizePx: large, bold: true },
         valueStyle: { ...small9, bold: true },
       }),
     ]),
